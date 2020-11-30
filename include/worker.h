@@ -6,6 +6,7 @@
 #define _WSDS_WORKER_DEFINE
 
 #include <stdlib.h>
+#include <thread>
 #include "deque.h"
 
 namespace WSDS {
@@ -37,11 +38,18 @@ class Deque; // forward declaration, defined elsewhere
 class Worker {
 
 public:
-    Worker(int id, int nvictims, bool master);
+    Worker(int id, int nvictims, bool useStealing = true);
     ~Worker();
 
     // add a "victim" worker to cache of potential victims
     void add_victim(Worker* victim);
+
+    // add a task to the worker's ready pool
+    void add_ready_task(Task* task);
+
+    // called by the executing task when a "child" tasks is spawned in order
+    // to add the task to the worker's ready pool
+    void add_child_task(Task* task);
 
     // indicate this worker should be stopped
     void stop(void);
@@ -56,19 +64,14 @@ public:
     // called by the scheduler to assign a "root" task to the master worker
     void assign_root_task(Task* task);
 
-    // called by the executing task when a "child" tasks is spawned in order
-    // to add the task to the worker's ready pool
-    void new_child_task(Task* task);
-
 private:
     int id;
-    bool master;
-    Task* rootTask;
     Task* assignedTask;
     Deque* readyDeq;
     int nvictims;
     Deque** victimDeqs;
     std::atomic_bool stopped;
+    bool useStealing;
 
     // attempt to steal a task from a "victim"
     Task* steal_task(void);
@@ -77,7 +80,7 @@ private:
 public:
     int get_id() { return this->id; }
     int get_nvictims() { return this->nvictims; }
-    bool get_master() { return this->master; }
+    bool get_useStealing() { return this->useStealing; }
 #endif
 
 }; // class Worker

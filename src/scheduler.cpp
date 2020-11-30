@@ -2,17 +2,19 @@
  * Copyright 2020 Bryson Banks and David Campbell.  All rights reserved.
  */
 
+#include <iostream>
 #include "scheduler.h"
 
 namespace WSDS {
 
-Scheduler::Scheduler(int nworkers) {
+Scheduler::Scheduler(int nworkers, bool useStealing) {
     this->nworkers = nworkers;
     if (this->nworkers == 0) {
         // match nworkers to available hardware
         this->nworkers = std::thread::hardware_concurrency();
     }
-    this->rootTask = nullptr;
+    this->rootTasks = std::vector<Task*>();
+    this->useStealing = useStealing;
 
     // create all workers
     this->create_workers();
@@ -34,31 +36,31 @@ Scheduler::~Scheduler() {
 }
 
 // schedules the root task for computation by the workers
-void Scheduler::spawn(Task* rootTask) {
-    this->rootTask = rootTask;
+void Scheduler::spawn(Task* rootTask, int workerIndex) {
+    // add task to collection of root tasks
+    this->rootTasks.push_back(rootTask);
 
-    // assign root task to master worker
-    this->masterWorker->assign_root_task(rootTask);
-
-    // TODO - While this is fine for now, only 1 root task can be scheduled
-    //        at any given time. It would be better to be able to handle
-    //        multiple root task simultaneously.
+    // add root task to ready deque of worker with index workerIndex
+    this->workers[workerIndex].worker->add_ready_task(rootTask);
 
     // start workers (if not already started)
     this->start_workers();
 }
 
-// called by the user application to wait for computation of the
-// root task to finish
+// called by the user application to wait for computation of all
+// root tasks to finish
 void Scheduler::wait(void) {
-    // wait for computation of the root task to complete
-    while (!this->rootTask->is_finished()) {
-        std::this_thread::yield();
+    // wait for computation of all root tasks to complete
+    int ntasks = this->rootTasks.size();
+    for (int i = 0; i < ntasks; i++) {
+        while (!this->rootTasks[i]->is_finished()) {
+            std::this_thread::yield();
+        }
     }
 
     // TODO - above yielding loop should probably be changed to utilize a
     //        mutex and condition variable, where this thread will get
-    //        notified when the root task is finished
+    //        notified when a root task is finished
 }
 
 // create and start all worker threads if not already started
@@ -123,12 +125,11 @@ void Scheduler::create_workers() {
     }
 
     // prepare worker 0 (the master worker)
-    this->create_worker(0, this->nworkers - 1, true);
-    this->masterWorker = this->workers[0].worker;
+    this->create_worker(0, this->nworkers - 1);
 
     // prepare non-master workers
     for (int i = 1; i < this->nworkers; i++) {
-        this->create_worker(i, this->nworkers - 1, false);
+        this->create_worker(i, this->nworkers - 1);
     }
 
     // yield until all workers are ready
@@ -150,9 +151,9 @@ void Scheduler::create_workers() {
 }
 
 // prepare worker with given worker id
-void Scheduler::create_worker(int id, int nvictims, bool master) {
+void Scheduler::create_worker(int id, int nvictims) {
     this->workers[id].thr = nullptr;
-	this->workers[id].worker = new internal::Worker(id, nvictims, master);
+	this->workers[id].worker = new internal::Worker(id, nvictims, this->useStealing);
 	this->workers[id].started = false;
 	this->workers[id].ready = true;
 }
