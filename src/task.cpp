@@ -2,6 +2,7 @@
  * Copyright 2020 Bryson Banks and David Campbell.  All rights reserved.
  */
 
+#include <iostream>
 #include "task.h"
 
 namespace WSDS {
@@ -19,11 +20,14 @@ Task::~Task() {}
 void Task::process(internal::Worker* worker) {
     this->worker = worker;
 
-    // execute task computation
-    this->execute();
+    // only process if not already finished
+    if (!this->is_finished()) {
+        // execute task computation
+        this->execute();
 
-    // task computation done, finish the task
-    this->finish_task();
+        // task computation done, finish the task
+        this->finish_task();
+    }
 }
 
 // spawns a new "child" task
@@ -34,8 +38,8 @@ void Task::spawn(Task* task) {
     // add child task to list of children
     this->children.push_back(task);
 
-    // add child task to worker's ready deque
-    this->worker->add_child_task(task);
+    // add child task to a worker's ready deque
+    this->worker->add_ready_task(task);
 }
 
 // this task shall wait for all "children" tasks to finish computation;
@@ -68,7 +72,21 @@ bool Task::is_finished() {
 
 // indicate task computation is finished
 void Task::finish_task() {
+    // aquire lock on finishedMutex of task
+    std::unique_lock<std::mutex> lock(this->finishedMutex);
+
     this->finished = true;
+
+    // release lock
+    lock.unlock();
+
+    // notify any waiting tasks
+    this->finishedCV.notify_all();
+}
+
+// get the parent of the current task
+Task* Task::get_parent() {
+    return this->parent;
 }
 
 } // namespace WSDS

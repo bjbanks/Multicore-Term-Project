@@ -15,7 +15,7 @@ TEST(Scheduler, creating_and_deleting) {
     int nworkers = 4;
     WSDS::Scheduler* scheduler = new WSDS::Scheduler(nworkers);
 
-    ASSERT_EQ(true, scheduler->get_useStealing());
+    ASSERT_EQ(WSDS::WORK_STEALING, scheduler->get_workerAlg());
 
     ASSERT_EQ(nworkers, scheduler->get_nworkers());
     ASSERT_NE(nullptr, scheduler->get_workers());
@@ -28,7 +28,7 @@ TEST(Scheduler, spawn_and_wait_increment_task) {
     int nworkers = 4;
     WSDS::Scheduler* scheduler = new WSDS::Scheduler(nworkers);
 
-    ASSERT_EQ(true, scheduler->get_useStealing());
+    ASSERT_EQ(WSDS::WORK_STEALING, scheduler->get_workerAlg());
 
     int in = 2;
     int out;
@@ -43,11 +43,11 @@ TEST(Scheduler, spawn_and_wait_increment_task) {
     delete scheduler;
 }
 
-TEST(Scheduler, spawn_and_wait_fib_task) {
+TEST(Scheduler, spawn_and_wait_fib_task_work_stealing) {
     int nworkers = 4;
     WSDS::Scheduler* scheduler = new WSDS::Scheduler(nworkers);
 
-    ASSERT_EQ(true, scheduler->get_useStealing());
+    ASSERT_EQ(WSDS::WORK_STEALING, scheduler->get_workerAlg());
 
     int in = 10;
     long out;
@@ -62,12 +62,52 @@ TEST(Scheduler, spawn_and_wait_fib_task) {
     delete scheduler;
 }
 
-TEST(Scheduler, spawn_and_wait_fib_task_no_stealing) {
+TEST(Scheduler, spawn_and_wait_fib_task_round_robin) {
     int nworkers = 4;
-    bool useStealing = false;
-    WSDS::Scheduler* scheduler = new WSDS::Scheduler(nworkers, useStealing);
+    int workerAlg = WSDS::ROUND_ROBIN;
+    WSDS::Scheduler* scheduler = new WSDS::Scheduler(nworkers, workerAlg);
 
-    ASSERT_EQ(false, scheduler->get_useStealing());
+    ASSERT_EQ(workerAlg, scheduler->get_workerAlg());
+
+    int in = 10;
+    long out;
+    FibTask* task = new FibTask(in, &out);
+
+    scheduler->spawn(task);
+    scheduler->wait();
+
+    ASSERT_EQ(55, out);
+
+    delete task;
+    delete scheduler;
+}
+
+TEST(Scheduler, spawn_and_wait_fib_task_random) {
+    int nworkers = 4;
+    int workerAlg = WSDS::RANDOM;
+    WSDS::Scheduler* scheduler = new WSDS::Scheduler(nworkers, workerAlg);
+
+    ASSERT_EQ(workerAlg, scheduler->get_workerAlg());
+
+    int in = 10;
+    long out;
+    FibTask* task = new FibTask(in, &out);
+
+    scheduler->spawn(task);
+    scheduler->wait();
+
+    ASSERT_EQ(55, out);
+
+    delete task;
+    delete scheduler;
+}
+
+TEST(Scheduler, spawn_and_wait_fib_task_smallest_deque) {
+    int nworkers = 4;
+    int workerAlg = WSDS::SMALLEST_DEQUE;
+    WSDS::Scheduler* scheduler = new WSDS::Scheduler(nworkers, workerAlg);
+
+    ASSERT_EQ(workerAlg, scheduler->get_workerAlg());
 
     int in = 10;
     long out;
@@ -86,7 +126,7 @@ TEST(Scheduler, spawn_and_wait_2_root_tasks) {
     int nworkers = 4;
     WSDS::Scheduler* scheduler = new WSDS::Scheduler(nworkers);
 
-    ASSERT_EQ(true, scheduler->get_useStealing());
+    ASSERT_EQ(WSDS::WORK_STEALING, scheduler->get_workerAlg());
 
     int in1 = 2;
     int out1;
@@ -108,12 +148,12 @@ TEST(Scheduler, spawn_and_wait_2_root_tasks) {
     delete scheduler;
 }
 
-TEST(Scheduler, spawn_and_wait_8_root_fib_tasks_using_stealing) {
+TEST(Scheduler, spawn_and_wait_8_root_fib_tasks_work_stealing) {
     int nworkers = 8;
-    bool useStealing = true;
-    WSDS::Scheduler* scheduler = new WSDS::Scheduler(nworkers, useStealing);
+    int workerAlg = WSDS::WORK_STEALING;
+    WSDS::Scheduler* scheduler = new WSDS::Scheduler(nworkers, workerAlg);
 
-    ASSERT_EQ(useStealing, scheduler->get_useStealing());
+    ASSERT_EQ(workerAlg, scheduler->get_workerAlg());
 
     std::vector<int> in(nworkers);
     std::vector<long> out(nworkers);
@@ -122,7 +162,7 @@ TEST(Scheduler, spawn_and_wait_8_root_fib_tasks_using_stealing) {
     for (int i = 0; i < nworkers; i++) {
         in[i] = 10;
         tasks[i] = new FibTask(in[i], &out[i]);
-        scheduler->spawn(tasks[i], 0);
+        scheduler->spawn(tasks[i]);
     }
 
     scheduler->wait();
@@ -136,12 +176,12 @@ TEST(Scheduler, spawn_and_wait_8_root_fib_tasks_using_stealing) {
     delete scheduler;
 }
 
-TEST(Scheduler, spawn_and_wait_8_root_fib_tasks_not_using_stealing) {
+TEST(Scheduler, spawn_and_wait_8_root_fib_tasks_round_robin) {
     int nworkers = 8;
-    bool useStealing = false;
-    WSDS::Scheduler* scheduler = new WSDS::Scheduler(nworkers, useStealing);
+    int workerAlg = WSDS::ROUND_ROBIN;
+    WSDS::Scheduler* scheduler = new WSDS::Scheduler(nworkers, workerAlg);
 
-    ASSERT_EQ(useStealing, scheduler->get_useStealing());
+    ASSERT_EQ(workerAlg, scheduler->get_workerAlg());
 
     std::vector<int> in(nworkers);
     std::vector<long> out(nworkers);
@@ -150,7 +190,63 @@ TEST(Scheduler, spawn_and_wait_8_root_fib_tasks_not_using_stealing) {
     for (int i = 0; i < nworkers; i++) {
         in[i] = 10;
         tasks[i] = new FibTask(in[i], &out[i]);
-        scheduler->spawn(tasks[i], i);
+        scheduler->spawn(tasks[i]);
+    }
+
+    scheduler->wait();
+
+    for (int i = 0; i < nworkers; i++) {
+        ASSERT_EQ(55, out[i]);
+
+        delete tasks[i];
+    }
+
+    delete scheduler;
+}
+
+TEST(Scheduler, spawn_and_wait_8_root_fib_tasks_random) {
+    int nworkers = 8;
+    int workerAlg = WSDS::RANDOM;
+    WSDS::Scheduler* scheduler = new WSDS::Scheduler(nworkers, workerAlg);
+
+    ASSERT_EQ(workerAlg, scheduler->get_workerAlg());
+
+    std::vector<int> in(nworkers);
+    std::vector<long> out(nworkers);
+    std::vector<FibTask*> tasks(nworkers);
+
+    for (int i = 0; i < nworkers; i++) {
+        in[i] = 10;
+        tasks[i] = new FibTask(in[i], &out[i]);
+        scheduler->spawn(tasks[i]);
+    }
+
+    scheduler->wait();
+
+    for (int i = 0; i < nworkers; i++) {
+        ASSERT_EQ(55, out[i]);
+
+        delete tasks[i];
+    }
+
+    delete scheduler;
+}
+
+TEST(Scheduler, spawn_and_wait_8_root_fib_tasks_smallest_deque) {
+    int nworkers = 8;
+    int workerAlg = WSDS::SMALLEST_DEQUE;
+    WSDS::Scheduler* scheduler = new WSDS::Scheduler(nworkers, workerAlg);
+
+    ASSERT_EQ(workerAlg, scheduler->get_workerAlg());
+
+    std::vector<int> in(nworkers);
+    std::vector<long> out(nworkers);
+    std::vector<FibTask*> tasks(nworkers);
+
+    for (int i = 0; i < nworkers; i++) {
+        in[i] = 10;
+        tasks[i] = new FibTask(in[i], &out[i]);
+        scheduler->spawn(tasks[i]);
     }
 
     scheduler->wait();
