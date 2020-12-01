@@ -55,6 +55,9 @@ public:
     // indicate task computation is finished
     void finish_task(void);
 
+    //returns unique id
+    int getId();
+
     // get the parent of the current task
     Task* get_parent(void);
 
@@ -67,6 +70,7 @@ private:
     std::vector<Task*> children;
     bool finished;
     bool ready;
+    int id;
 
     void set_parent(Task* task) { this->parent = task; }
 

@@ -1,7 +1,7 @@
 /*
  * Copyright 2020 Bryson Banks and David Campbell.  All rights reserved.
  */
-
+#include <iostream>
 #include "worker.h"
 #include "scheduler.h"
 

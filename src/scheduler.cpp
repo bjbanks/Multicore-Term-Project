@@ -76,6 +76,8 @@ void Scheduler::wait(void) {
         // release lock
         lock.unlock();
     }
+
+    this->rootTasks.clear();
 }
 
 // choose the next worker to get a task based on worker algorithm,
