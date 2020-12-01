@@ -91,7 +91,6 @@ void Worker::work_loop() {
         if (this->assignedTask != nullptr) {
             // only if not already finished
             if (!this->assignedTask->is_finished()) {
-                //                std::cout << "Processing Task " << this->assignedTask->getId() << std::endl;
                 this->assignedTask->process(this);
             }
         }

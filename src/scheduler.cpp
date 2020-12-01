@@ -70,7 +70,6 @@ void Scheduler::wait(void) {
 
         // use CV to wait until task is finished
         while (!this->rootTasks[i]->is_finished()) {
-            std::cout << "Not finished " << this->rootTasks[i]->getId() << std::endl;
             this->rootTasks[i]->finishedCV.wait(lock);
         }
 

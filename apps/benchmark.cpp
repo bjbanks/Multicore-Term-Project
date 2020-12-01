@@ -7,7 +7,7 @@
 #include <string.h>
 
 
-#define NWORKERS 1
+#define NWORKERS 0
 
 void init_arr(int* arr, int size){
 
@@ -59,10 +59,11 @@ double do_timed_run(const char* app, int size, int iterations){
 
         gettimeofday(&before, NULL);
         for (i = 0; i < iterations; i++){
+            std::cout << "starting iteration " << i << std::endl;
             BENCHMARKS::parallelAdd(arr3, arr1, arr2, size);
         }
 
-        print_arr(arr3, size);
+        //print_arr(arr3, size);
 
     }
 
@@ -144,6 +145,7 @@ int main(int argc, char* argv[]){
     int task_work_size = atoi(argv[1]);
     int datasize = atoi(argv[2]);
     int iterations = atoi(argv[3]);
+    std::cout << iterations << std::endl;
 
     WSDS::Scheduler* scheduler = new WSDS::Scheduler(NWORKERS, true);
 
@@ -152,19 +154,19 @@ int main(int argc, char* argv[]){
     BENCHMARKS::parallelArrayInit(scheduler, task_work_size);
    
 
-    std::cout << "Running Parallel Add:" << std::endl;
+    std::cout << "Running Parallel Add: ";
     runtime = do_timed_run("parallelAdd", datasize, iterations);
-    std::cout << "Result: " << runtime << " ns" << std::endl << std::endl;/*
+    std::cout << "Result: " << runtime << " ns" << std::endl << std::endl;
 
-    std::cout << "Running Parallel Multiply:" << std::endl;
+    /*std::cout << "Running Parallel Multiply:" << std::endl;
     runtime = do_timed_run("parallelMultiply", datasize, iterations);
     std::cout << "Result: " << runtime << " ns" << std::endl << std::endl;
 
     std::cout << "Running Parallel Copy:" << std::endl;
     runtime = do_timed_run("parallelCopy", datasize, iterations);
-    std::cout << "Result: " << runtime << " ns" << std::endl << std::endl;*/
+    std::cout << "Result: " << runtime << " ns" << std::endl << std::endl;
 
-    /*    std::cout << "Running Parallel Reduce:" << std::endl;
+    std::cout << "Running Parallel Reduce:" << std::endl;
     runtime = do_timed_run("parallelReduce", datasize, iterations);
     std::cout << "Result: " << runtime << " ns" << std::endl << std::endl;*/
 
