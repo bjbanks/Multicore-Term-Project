@@ -4,19 +4,21 @@
 
 #include "parallelArray.h"
 #include "math.h"
+#include <iostream>
 
-#define WORK_PER_SUBTASK (1 << 10)
 
 namespace BENCHMARKS {
 
     WSDS::Scheduler* parSched;
+    int work_per_subtask;
 
 
     /****************************************************************/
     /*            Library Init                                      */
     /****************************************************************/
-    void parallelArrayInit(WSDS::Scheduler* sched){
+    void parallelArrayInit(WSDS::Scheduler* sched, int task_work_size){
         parSched = sched;
+        work_per_subtask = task_work_size;
     }
 
     /****************************************************************/
@@ -24,14 +26,15 @@ namespace BENCHMARKS {
     /****************************************************************/
     void parallelAdd(int* vecOut, int* vecA, int* vecB, int size) {
 
-        int num_sub_tasks = size / WORK_PER_SUBTASK;
+        int num_sub_tasks = size / work_per_subtask;
         int partial_size = size  / num_sub_tasks;
+        int i;
 
         ParallelAddTaskPartial* tasks[num_sub_tasks];
 
 
         /*Spawn a bunch of congruent work to divide up array to do vector adds*/
-        for (int i = 0; i < num_sub_tasks; i++){
+        for (i = 0; i < num_sub_tasks; i++){
 
             int offset = i*partial_size;
             
@@ -72,14 +75,15 @@ namespace BENCHMARKS {
     /****************************************************************/
     void parallelMultiply(int* vecOut, int* vecA, int* vecB, int size) {
 
-        int num_sub_tasks = size / WORK_PER_SUBTASK;
+        int i;
+        int num_sub_tasks = size / work_per_subtask;
         int partial_size = size  / num_sub_tasks;
 
-        ParallelAddTaskPartial* tasks[num_sub_tasks];
+        ParallelMultiplyTaskPartial* tasks[num_sub_tasks];
 
 
         /*Spawn a bunch of congruent work to divide up array to do vector adds*/
-        for (int i = 0; i < num_sub_tasks; i++){
+        for (i = 0; i < num_sub_tasks; i++){
 
             int offset = i*partial_size;
             
@@ -93,7 +97,7 @@ namespace BENCHMARKS {
         parSched->wait();
 
         /*clean up the sub tasks*/
-        for (i = 0; i < this->num_sub_tasks; i++){
+        for (i = 0; i < num_sub_tasks; i++){
             delete tasks[i];
         }
 
@@ -122,14 +126,15 @@ namespace BENCHMARKS {
 
     void parallelCopy(int* out, int* in, int size){
 
-        int num_sub_tasks = size / WORK_PER_SUBTASK;
+        int i;
+        int num_sub_tasks = size / work_per_subtask;
         int partial_size = size  / num_sub_tasks;
 
-        ParallelAddTaskPartial* tasks[num_sub_tasks];
+        ParallelCopyTaskPartial* tasks[num_sub_tasks];
 
 
         /*Spawn a bunch of congruent work to divide up array to do vector adds*/
-        for (int i = 0; i < this->num_sub_tasks; i++){
+        for (i = 0; i < num_sub_tasks; i++){
 
             int offset = i*partial_size;
             
@@ -143,7 +148,7 @@ namespace BENCHMARKS {
         parSched->wait();
 
         /*clean up the sub tasks*/
-        for (i = 0; i < this->num_sub_tasks; i++){
+        for (i = 0; i < num_sub_tasks; i++){
             delete tasks[i];
         }
 
@@ -152,7 +157,7 @@ namespace BENCHMARKS {
     }
 
     
-    void ParallelCopyTaskPartial::ParallelCopyTaskPartial(int* vecOut, int* vecIn, int size){
+    ParallelCopyTaskPartial::ParallelCopyTaskPartial(int* vecOut, int* vecIn, int size){
 
         this->vecOut = vecOut;
         this->vecIn = vecIn;
@@ -172,6 +177,19 @@ namespace BENCHMARKS {
     /*            Parallel Reduce                                   */
     /****************************************************************/
 
+void print_arr(int* arr, int size){
+
+    for (int i = 0; i < size; i ++){
+
+        std::cout << arr[i] << " ";
+
+    }
+
+    std::cout << std::endl;
+
+
+}
+
     int parallelReduce(int* in, int size){
 
         int out[size];
@@ -179,22 +197,27 @@ namespace BENCHMARKS {
         parallelCopy(out, in, size);
 
         int num_steps = (int)log2((double)size);
-        int num_sub_tasks = size / WORK_PER_SUBTASK;
+        int num_sub_tasks = size / work_per_subtask;
+
+
         
         ParallelReduceTaskPartial* tasks[size];
 
-        for ( int step = 1; i <= num_steps; i++){
+        for ( int step = 1; step <= num_steps; step++){
 
-            for (int task = 0; i < num_sub_tasks; i++){
+            for (int task = 0; task < num_sub_tasks; task++){
 
-                tasks[i] = new ParallelReduceTaskPartial(out, task*WORK_PER_SUBTASK+1, size, step);
-                parSched->spawn(tasks[i]);
+                tasks[task] = new ParallelReduceTaskPartial(out, task*work_per_subtask+1, size, step);
+                parSched->spawn(tasks[task]);                
                 
             }
             
             parSched->wait();
+
+            print_arr(out, size);
             
-        }       
+        }     
+        return out[0];
         
     }
 
@@ -205,21 +228,19 @@ namespace BENCHMARKS {
         this->start_idx = start_idx;
     }
 
-    void ParallelReduceTaskParial::execute(){
+    void ParallelReduceTaskPartial::execute(){
 
-        if (start_idx <=  ( size / (1<<step))) {
+        if (start_idx > ( size / (1<<step))) {
             return; //nothing to do
         }
 
-        for (int i = start_idx; i <= start_idx + WORK_PER_SUBTASK; i++){
+        for (int i = start_idx; i <= start_idx + work_per_subtask; i++){
             if (i <= ( size / (1<<step) ) ) { //i <= N/2^h
-                arr[i-1] = arr[2*i-2] + arr[2*1-1];
+                arr[i-1] = arr[2*i-2] + arr[2*i-1];
             }
-        }
+        }        
 
     }    
-
-}
 
 
 }

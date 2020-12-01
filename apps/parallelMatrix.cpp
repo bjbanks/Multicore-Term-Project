@@ -128,10 +128,11 @@ namespace BENCHMARKS {
     void ParallelMatrixMultiplyPartial::execute(){
 
         //multiply the elements of the array together
-        int temp[size];
+        int* temp = new int[size];
         parallelMultiply(temp, &A[i], &B[j], size);
         parallelReduce(temp, size);
         out[i][j] = temp[0];
+        delete temp;
 
 
     }

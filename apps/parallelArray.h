@@ -14,7 +14,7 @@ namespace BENCHMARKS {
     /****************************************************************/
     /*            Library Init                                      */
     /****************************************************************/
-    void parallelArrayInit(WSDS::Scheduler* sched);
+    void parallelArrayInit(WSDS::Scheduler* sched, int task_work_size);
 
 
     /****************************************************************/
@@ -39,13 +39,12 @@ namespace BENCHMARKS {
         int size;
 
     };
-
     /****************************************************************/
     /*            Parallel Multiplying                              */
     /****************************************************************/
     void parallelMultiply(int* vecOut, int* vecA, int* vecB, int size);
     
-    class ParallelAddTaskPartial : public WSDS::Task {
+    class ParallelMultiplyTaskPartial : public WSDS::Task {
 
 
     public:
@@ -83,7 +82,7 @@ namespace BENCHMARKS {
         int* vecOut;
         int* vecIn;
         int size;
-    }
+    };
         
         
     /****************************************************************/
@@ -98,7 +97,7 @@ namespace BENCHMARKS {
 
     public:
 
-        ParallelReduceTaskPartial(int* vecOut, int* vecIn, int size);
+        ParallelReduceTaskPartial(int* arr, int start_idx, int size, int step);
 
         void execute();
 
@@ -108,6 +107,7 @@ namespace BENCHMARKS {
         int size;
         int step;
         int start_idx;
+    };
     
 
 }
