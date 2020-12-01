@@ -2,19 +2,23 @@
  * Copyright 2020 Bryson Banks and David Campbell.  All rights reserved.
  */
 
-#include <iostream>
 #include "scheduler.h"
 
 namespace WSDS {
 
-Scheduler::Scheduler(int nworkers, bool useStealing) {
+Scheduler::Scheduler(int nworkers, int workerAlg) {
     this->nworkers = nworkers;
     if (this->nworkers == 0) {
         // match nworkers to available hardware
         this->nworkers = std::thread::hardware_concurrency();
     }
     this->rootTasks = std::vector<Task*>();
-    this->useStealing = useStealing;
+    this->workerAlg = workerAlg;
+
+    // only needed for ROUND_ROBIN alg
+    this->roundRobinIndex = 0;
+
+    this->distribution = std::uniform_int_distribution<>(0, nworkers-1);
 
     // create all workers
     this->create_workers();
@@ -41,10 +45,17 @@ void Scheduler::spawn(Task* rootTask, int workerIndex) {
     this->rootTasks.push_back(rootTask);
 
     // add root task to ready deque of worker with index workerIndex
-    this->workers[workerIndex].worker->add_ready_task(rootTask);
+    this->workers[workerIndex].worker->add_ready_task(rootTask, true);
 
-    // start workers (if not already started)
-    this->start_workers();
+    // update round robin index if using round robin alg
+    if (this->workerAlg == ROUND_ROBIN) {
+        std::unique_lock<std::mutex> lock(this->roundRobinMutex);
+        this->roundRobinIndex = workerIndex + 1;
+        if (this->roundRobinIndex >= this->nworkers) {
+            this->roundRobinIndex = 0;
+        }
+        lock.unlock();
+    }
 }
 
 // called by the user application to wait for computation of all
@@ -53,15 +64,55 @@ void Scheduler::wait(void) {
     // wait for computation of all root tasks to complete
     int ntasks = this->rootTasks.size();
     for (int i = 0; i < ntasks; i++) {
+
+        // aquire lock on finishedMutex of task
+        std::unique_lock<std::mutex> lock(this->rootTasks[i]->finishedMutex);
+
+        // use CV to wait until task is finished
         while (!this->rootTasks[i]->is_finished()) {
             std::cout << "Not finished " << this->rootTasks[i]->getId() << std::endl;
-            std::this_thread::yield();
+            this->rootTasks[i]->finishedCV.wait(lock);
         }
+
+        // release lock
+        lock.unlock();
+    }
+}
+
+// choose the next worker to get a task based on worker algorithm,
+// not needed when using work stealing
+internal::Worker* Scheduler::next_worker() {
+    internal::Worker* worker;
+
+    switch(this->workerAlg) {
+        case ROUND_ROBIN:
+            {
+                std::unique_lock<std::mutex> lock(this->roundRobinMutex);
+                worker = this->workers[this->roundRobinIndex].worker;
+                this->roundRobinIndex++;
+                if (this->roundRobinIndex >= this->nworkers) {
+                    this->roundRobinIndex = 0;
+                }
+                lock.unlock();
+            }
+            break;
+
+        case SMALLEST_DEQUE:
+            {
+                worker = this->worker_with_smallest_deque();
+            }
+            break;
+
+        default:
+        case RANDOM:
+            {
+                int index = this->distribution(this->generator);
+                worker = this->workers[index].worker;
+            }
+            break;
     }
 
-    // TODO - above yielding loop should probably be changed to utilize a
-    //        mutex and condition variable, where this thread will get
-    //        notified when a root task is finished
+    return worker;
 }
 
 // create and start all worker threads if not already started
@@ -154,9 +205,31 @@ void Scheduler::create_workers() {
 // prepare worker with given worker id
 void Scheduler::create_worker(int id, int nvictims) {
     this->workers[id].thr = nullptr;
-	this->workers[id].worker = new internal::Worker(id, nvictims, this->useStealing);
+	this->workers[id].worker = new internal::Worker(id, nvictims, this, this->workerAlg);
 	this->workers[id].started = false;
 	this->workers[id].ready = true;
+}
+
+// determine worker with smallest number of waiting ready tasks
+internal::Worker* Scheduler::worker_with_smallest_deque() {
+    int workerIndex = 0;
+    int smallestSize = INT_MAX;
+
+    for (int i = 0; i < this->nworkers; i++) {
+        internal::Worker* worker = this->workers[i].worker;
+        int dequeSize = worker->get_ready_deque_size();
+        if (dequeSize < smallestSize) {
+            smallestSize = dequeSize;
+            workerIndex = i;
+
+            // cannot get smaller than an empty deque
+            if (dequeSize == 0) {
+                break;
+            }
+        }
+    }
+
+    return this->workers[workerIndex].worker;
 }
 
 } // namespace WSDS
