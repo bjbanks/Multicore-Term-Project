@@ -5,9 +5,10 @@
 #include <stdlib.h>
 #include "parallelArray.h"
 #include <string.h>
+#include <unistd.h>
+#include <assert.h>
 
-
-#define NWORKERS 0
+#define NWORKERS 1
 
 void init_arr(int* arr, int size){
 
@@ -59,11 +60,9 @@ double do_timed_run(const char* app, int size, int iterations){
 
         gettimeofday(&before, NULL);
         for (i = 0; i < iterations; i++){
-            std::cout << "starting iteration " << i << std::endl;
             BENCHMARKS::parallelAdd(arr3, arr1, arr2, size);
         }
 
-        //print_arr(arr3, size);
 
     }
 
@@ -85,7 +84,6 @@ double do_timed_run(const char* app, int size, int iterations){
             BENCHMARKS::parallelMultiply(arr3, arr1, arr2, size);
         }
 
-        print_arr(arr3, size);
 
     }
 
@@ -104,8 +102,6 @@ double do_timed_run(const char* app, int size, int iterations){
             BENCHMARKS::parallelCopy(arr2, arr1, size);
         }
 
-        print_arr(arr2, size);
-
     }
 
     /************************************************************/
@@ -120,9 +116,11 @@ double do_timed_run(const char* app, int size, int iterations){
         gettimeofday(&before, NULL);
         for (i = 0; i < iterations; i++){
             result = BENCHMARKS::parallelReduce(arr1, size);
+            std::cout << result << " " << ((size*(size+1))/2) << std::endl;
+            assert(result == ((size*(size+1))/2));
         }
 
-        std::cout << result << std::endl;
+
 
     }
 
@@ -145,7 +143,6 @@ int main(int argc, char* argv[]){
     int task_work_size = atoi(argv[1]);
     int datasize = atoi(argv[2]);
     int iterations = atoi(argv[3]);
-    std::cout << iterations << std::endl;
 
     WSDS::Scheduler* scheduler = new WSDS::Scheduler(NWORKERS, true);
 
@@ -158,7 +155,7 @@ int main(int argc, char* argv[]){
     runtime = do_timed_run("parallelAdd", datasize, iterations);
     std::cout << "Result: " << runtime << " ns" << std::endl << std::endl;
 
-    /*std::cout << "Running Parallel Multiply:" << std::endl;
+    std::cout << "Running Parallel Multiply:" << std::endl;
     runtime = do_timed_run("parallelMultiply", datasize, iterations);
     std::cout << "Result: " << runtime << " ns" << std::endl << std::endl;
 
@@ -168,7 +165,7 @@ int main(int argc, char* argv[]){
 
     std::cout << "Running Parallel Reduce:" << std::endl;
     runtime = do_timed_run("parallelReduce", datasize, iterations);
-    std::cout << "Result: " << runtime << " ns" << std::endl << std::endl;*/
+    std::cout << "Result: " << runtime << " ns" << std::endl << std::endl;
 
     
     return 0;

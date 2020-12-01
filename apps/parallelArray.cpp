@@ -31,7 +31,7 @@ namespace BENCHMARKS {
         int i;
 
         ParallelAddTaskPartial* tasks[num_sub_tasks];
-
+         
 
         /*Spawn a bunch of congruent work to divide up array to do vector adds*/
         for (i = 0; i < num_sub_tasks; i++){
@@ -202,6 +202,8 @@ void print_arr(int* arr, int size){
 
         
         ParallelReduceTaskPartial* tasks[size];
+
+        print_arr(out, size);
 
         for ( int step = 1; step <= num_steps; step++){
 
