@@ -58,6 +58,9 @@ public:
     // only called by the deque owner
     Task* pop_bottom(void);
 
+    // get the current number of tasks in the deque
+    int get_num_tasks(void);
+
 private:
     int id;
     size_t size;

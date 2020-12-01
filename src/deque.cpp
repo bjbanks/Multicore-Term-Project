@@ -123,6 +123,17 @@ Task* Deque::pop_bottom() {
     return nullptr;
 }
 
+// get the current number of tasks in the deque
+int Deque::get_num_tasks(void) {
+    int localBot = this->bottom.load();
+    internal::Age oldAge = this->age.load();
+    int num = localBot - oldAge.top;
+    if (num < 0) {
+        num = 0;
+    }
+    return num;
+}
+
 } // namespace internal
 
 } // namespace WSDS

@@ -13,12 +13,12 @@
 TEST(Worker, creating_and_deleting) {
     int id = 0;
     int nvictims = 2;
-    bool useStealing = true;
-    WSDS::internal::Worker* worker = new WSDS::internal::Worker(id, nvictims, useStealing);
+    int workerAlg = WSDS::WORK_STEALING;
+    WSDS::internal::Worker* worker = new WSDS::internal::Worker(id, nvictims, nullptr, workerAlg);
 
     ASSERT_EQ(id, worker->get_id());
     ASSERT_EQ(0, worker->get_nvictims());
-    ASSERT_EQ(useStealing, worker->get_useStealing());
+    ASSERT_EQ(workerAlg, worker->get_workerAlg());
 
     delete worker;
 }
