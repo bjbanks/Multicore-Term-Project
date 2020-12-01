@@ -14,7 +14,7 @@ OBJ = $(patsubst %, $(ODIR)/%, $(_OBJ))
 TESTS = tests-runner.cpp scheduler-tests.cpp worker-tests.cpp deque-tests.cpp \
 	task-tests.cpp utils-tests.cpp
 
-TASKS = increment-task.h
+TASKS = increment-task.h fib-task.h
 
 all: unit_tests
 

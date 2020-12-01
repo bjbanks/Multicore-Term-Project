@@ -5,7 +5,6 @@
 #ifndef _WSDS_SCHEDULER_DEFINE
 #define _WSDS_SCHEDULER_DEFINE
 
-#include <thread>
 #include "worker.h"
 
 namespace WSDS {
@@ -40,21 +39,22 @@ typedef struct _WorkerData  {
 class Scheduler {
 
 public:
-    Scheduler(int nworkers);
+    Scheduler(int nworkers, bool useStealing = true);
     ~Scheduler();
 
     // schedules the root task for computation by the workers
-    void spawn(Task* rootTask);
+    void spawn(Task* rootTask, int workerIndex = 0);
 
-    // called by the user application to wait for computation of the
-    // root task to finish
+    // called by the user application to wait for computation of all
+    // root tasks to finish
     void wait(void);
 
 private:
     int nworkers;
     internal::WorkerData* workers;
     internal::Worker* masterWorker;
-    Task* rootTask;
+    std::vector<Task*> rootTasks;
+    bool useStealing;
 
     // create and start all worker threads if not already started
     void start_workers(void);
@@ -72,14 +72,21 @@ private:
     void create_workers(void);
 
     // prepare worker with given worker id
-    void create_worker(int id, int nvictims, bool master);
+    void create_worker(int id, int nvictims);
 
 #ifdef _UNIT_TESTING
 public:
     int get_nworkers() { return this->nworkers; }
     internal::WorkerData* get_workers() { return this->workers; }
-    internal::Worker* get_masterWorker() { return this->masterWorker; }
-    Task* get_rootTask() { return this->rootTask; }
+    bool get_useStealing() { return this->useStealing; }
+    Task* get_rootTask(unsigned int i) {
+        if (i < this->rootTasks.size()) {
+            return this->rootTasks[i];
+        }
+        else {
+            return nullptr;
+        }
+    }
 #endif
 
 }; // class Scheduler
