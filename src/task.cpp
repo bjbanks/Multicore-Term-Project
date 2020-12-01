@@ -6,14 +6,23 @@
 
 namespace WSDS {
 
+    std::atomic<int> next_task_id{0};
+
 Task::Task() {
     this->worker = nullptr;
     this->parent = nullptr;
     this->children = std::vector<Task*>();
     this->finished = false;
+    this->id = next_task_id++;
 }
 
 Task::~Task() {}
+
+int Task::getId(){
+
+    return this->id;
+
+}
 
 // function worker will call this in order to process the task
 void Task::process(internal::Worker* worker) {

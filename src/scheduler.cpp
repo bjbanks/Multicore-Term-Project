@@ -54,6 +54,7 @@ void Scheduler::wait(void) {
     int ntasks = this->rootTasks.size();
     for (int i = 0; i < ntasks; i++) {
         while (!this->rootTasks[i]->is_finished()) {
+            std::cout << "Not finished " << this->rootTasks[i]->getId() << std::endl;
             std::this_thread::yield();
         }
     }

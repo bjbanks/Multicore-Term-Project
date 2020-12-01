@@ -7,7 +7,7 @@
 #include <string.h>
 
 
-#define NWORKERS 8
+#define NWORKERS 1
 
 void init_arr(int* arr, int size){
 
@@ -145,16 +145,16 @@ int main(int argc, char* argv[]){
     int datasize = atoi(argv[2]);
     int iterations = atoi(argv[3]);
 
-    WSDS::Scheduler* scheduler = new WSDS::Scheduler(NWORKERS);
+    WSDS::Scheduler* scheduler = new WSDS::Scheduler(NWORKERS, true);
 
 
     //initialize the parallel array library by registering the scheduler
     BENCHMARKS::parallelArrayInit(scheduler, task_work_size);
    
 
-    /*    std::cout << "Running Parallel Add:" << std::endl;
+    std::cout << "Running Parallel Add:" << std::endl;
     runtime = do_timed_run("parallelAdd", datasize, iterations);
-    std::cout << "Result: " << runtime << " ns" << std::endl << std::endl;
+    std::cout << "Result: " << runtime << " ns" << std::endl << std::endl;/*
 
     std::cout << "Running Parallel Multiply:" << std::endl;
     runtime = do_timed_run("parallelMultiply", datasize, iterations);
@@ -164,9 +164,9 @@ int main(int argc, char* argv[]){
     runtime = do_timed_run("parallelCopy", datasize, iterations);
     std::cout << "Result: " << runtime << " ns" << std::endl << std::endl;*/
 
-    std::cout << "Running Parallel Reduce:" << std::endl;
+    /*    std::cout << "Running Parallel Reduce:" << std::endl;
     runtime = do_timed_run("parallelReduce", datasize, iterations);
-    std::cout << "Result: " << runtime << " ns" << std::endl << std::endl;
+    std::cout << "Result: " << runtime << " ns" << std::endl << std::endl;*/
 
     
     return 0;

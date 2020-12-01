@@ -53,12 +53,16 @@ public:
     // indicate task computation is finished
     void finish_task(void);
 
+    //returns unique id
+    int getId();
+
 private:
     internal::Worker* worker;
     Task* parent;
     std::vector<Task*> children;
     bool finished;
     bool ready;
+    int id;
 
     void set_parent(Task* task) { this->parent = task; }
 

@@ -1,7 +1,7 @@
 /*
  * Copyright 2020 Bryson Banks and David Campbell.  All rights reserved.
  */
-
+#include <iostream>
 #include "worker.h"
 
 namespace WSDS {
@@ -19,7 +19,7 @@ Worker::Worker(int id, int nvictims, bool useStealing) {
     this->assignedTask = nullptr;
     this->nvictims = 0;
     this->victimDeqs = new Deque*[nvictims];
-    this->readyDeq = new Deque(id, 100); // TODO - size needs to be dynamic somehow
+    this->readyDeq = new Deque(id, 1000); // TODO - size needs to be dynamic somehow
 }
 
 Worker::~Worker() {
@@ -68,6 +68,7 @@ void Worker::work_loop() {
         if (this->assignedTask != nullptr) {
             // only if not already finished
             if (!this->assignedTask->is_finished()) {
+                //                std::cout << "Processing Task " << this->assignedTask->getId() << std::endl;
                 this->assignedTask->process(this);
             }
         }
