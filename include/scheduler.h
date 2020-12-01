@@ -5,6 +5,9 @@
 #ifndef _WSDS_SCHEDULER_DEFINE
 #define _WSDS_SCHEDULER_DEFINE
 
+#include <iostream>
+#include <random>
+#include <limits.h>
 #include "worker.h"
 
 namespace WSDS {
@@ -39,7 +42,7 @@ typedef struct _WorkerData  {
 class Scheduler {
 
 public:
-    Scheduler(int nworkers, bool useStealing = true);
+    Scheduler(int nworkers, int workerAlg = WORK_STEALING);
     ~Scheduler();
 
     // schedules the root task for computation by the workers
@@ -49,12 +52,21 @@ public:
     // root tasks to finish
     void wait(void);
 
+    // choose the next worker to get a task based on worker algorithm,
+    // not needed when using work stealing
+    internal::Worker* next_worker(void);
+
+    std::default_random_engine generator;
+    std::uniform_int_distribution<int> distribution;
+
 private:
     int nworkers;
     internal::WorkerData* workers;
     internal::Worker* masterWorker;
     std::vector<Task*> rootTasks;
-    bool useStealing;
+    int workerAlg;
+    int roundRobinIndex;
+    std::mutex roundRobinMutex;
 
     // create and start all worker threads if not already started
     void start_workers(void);
@@ -74,11 +86,14 @@ private:
     // prepare worker with given worker id
     void create_worker(int id, int nvictims);
 
+    // determine worker with smallest number of waiting ready tasks
+    internal::Worker* worker_with_smallest_deque(void);
+
 #ifdef _UNIT_TESTING
 public:
     int get_nworkers() { return this->nworkers; }
     internal::WorkerData* get_workers() { return this->workers; }
-    bool get_useStealing() { return this->useStealing; }
+    int get_workerAlg() { return this->workerAlg; }
     Task* get_rootTask(unsigned int i) {
         if (i < this->rootTasks.size()) {
             return this->rootTasks[i];

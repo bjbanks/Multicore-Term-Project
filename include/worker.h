@@ -5,13 +5,23 @@
 #ifndef _WSDS_WORKER_DEFINE
 #define _WSDS_WORKER_DEFINE
 
+#include <iostream>
+#include <random>
 #include <stdlib.h>
 #include <thread>
+#include <queue>
 #include "deque.h"
 
 namespace WSDS {
 
+static constexpr int WORK_STEALING = 0;
+static constexpr int ROUND_ROBIN = 1;
+static constexpr int RANDOM = 2;
+static constexpr int SMALLEST_DEQUE = 3;
+
 class Task; // forward declaration, defined elsewhere
+
+class Scheduler; // forward declaration, defined elsewhere
 
 /*
  * Internal data structures and functions not expected to be used
@@ -38,18 +48,14 @@ class Deque; // forward declaration, defined elsewhere
 class Worker {
 
 public:
-    Worker(int id, int nvictims, bool useStealing = true);
+    Worker(int id, int nvictims, Scheduler* scheduler, int workerAlg = WORK_STEALING);
     ~Worker();
 
     // add a "victim" worker to cache of potential victims
     void add_victim(Worker* victim);
 
     // add a task to the worker's ready pool
-    void add_ready_task(Task* task);
-
-    // called by the executing task when a "child" tasks is spawned in order
-    // to add the task to the worker's ready pool
-    void add_child_task(Task* task);
+    void add_ready_task(Task* task, bool force = false);
 
     // indicate this worker should be stopped
     void stop(void);
@@ -64,6 +70,13 @@ public:
     // called by the scheduler to assign a "root" task to the master worker
     void assign_root_task(Task* task);
 
+    // get the current size of the reqdy deque (number of waiting ready tasks)
+    int get_ready_deque_size(void);
+
+    std::mutex dequeMutex; // not needed in work stealing alg
+    std::default_random_engine generator;
+    std::uniform_int_distribution<int> distribution;
+
 private:
     int id;
     Task* assignedTask;
@@ -71,7 +84,8 @@ private:
     int nvictims;
     Deque** victimDeqs;
     std::atomic_bool stopped;
-    bool useStealing;
+    int workerAlg;
+    Scheduler* scheduler;
 
     // attempt to steal a task from a "victim"
     Task* steal_task(void);
@@ -80,7 +94,7 @@ private:
 public:
     int get_id() { return this->id; }
     int get_nvictims() { return this->nvictims; }
-    bool get_useStealing() { return this->useStealing; }
+    bool get_workerAlg() { return this->workerAlg; }
 #endif
 
 }; // class Worker

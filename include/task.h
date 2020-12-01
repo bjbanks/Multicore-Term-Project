@@ -6,6 +6,8 @@
 #define _WSDS_TASK_DEFINE
 
 #include <vector>
+#include <mutex>
+#include <condition_variable>
 #include "worker.h"
 
 namespace WSDS {
@@ -52,6 +54,12 @@ public:
 
     // indicate task computation is finished
     void finish_task(void);
+
+    // get the parent of the current task
+    Task* get_parent(void);
+
+    std::mutex finishedMutex;
+    std::condition_variable finishedCV;
 
 private:
     internal::Worker* worker;
