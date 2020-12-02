@@ -216,6 +216,12 @@ double do_timed_run(const char* app, int size, int iterations){
 
 int main(int argc, char* argv[]){
 
+    // check correct number of args
+    if (argc != 5) {
+        std::cout << "Usage: ./benchmark <task_work_size> <data_size> <iterations> <policy>" << std::endl;
+        return 0;
+    }
+
     double runtime;
     int task_work_size = 1<<atoi(argv[1]);
     int datasize = 1<<atoi(argv[2]);
