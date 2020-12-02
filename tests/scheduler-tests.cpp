@@ -259,3 +259,119 @@ TEST(Scheduler, spawn_and_wait_8_root_fib_tasks_smallest_deque) {
 
     delete scheduler;
 }
+
+TEST(Scheduler, spawn_and_wait_100_root_fib_tasks_work_stealing) {
+    int nworkers = 4;
+    int workerAlg = WSDS::WORK_STEALING;
+    WSDS::Scheduler* scheduler = new WSDS::Scheduler(nworkers, workerAlg);
+
+    ASSERT_EQ(workerAlg, scheduler->get_workerAlg());
+
+    int ntasks = 100;
+    std::vector<int> in(ntasks);
+    std::vector<long> out(ntasks);
+    std::vector<FibTask*> tasks(ntasks);
+
+    for (int i = 0; i < ntasks; i++) {
+        in[i] = 10;
+        tasks[i] = new FibTask(in[i], &out[i]);
+        scheduler->spawn(tasks[i]);
+    }
+
+    scheduler->wait();
+
+    for (int i = 0; i < ntasks; i++) {
+        ASSERT_EQ(55, out[i]);
+
+        delete tasks[i];
+    }
+
+    delete scheduler;
+}
+
+TEST(Scheduler, spawn_and_wait_100_root_fib_tasks_round_robin) {
+    int nworkers = 4;
+    int workerAlg = WSDS::ROUND_ROBIN;
+    WSDS::Scheduler* scheduler = new WSDS::Scheduler(nworkers, workerAlg);
+
+    ASSERT_EQ(workerAlg, scheduler->get_workerAlg());
+
+    int ntasks = 100;
+    std::vector<int> in(ntasks);
+    std::vector<long> out(ntasks);
+    std::vector<FibTask*> tasks(ntasks);
+
+    for (int i = 0; i < ntasks; i++) {
+        in[i] = 10;
+        tasks[i] = new FibTask(in[i], &out[i]);
+        scheduler->spawn(tasks[i]);
+    }
+
+    scheduler->wait();
+
+    for (int i = 0; i < ntasks; i++) {
+        ASSERT_EQ(55, out[i]);
+
+        delete tasks[i];
+    }
+
+    delete scheduler;
+}
+
+TEST(Scheduler, spawn_and_wait_100_root_fib_tasks_random) {
+    int nworkers = 4;
+    int workerAlg = WSDS::RANDOM;
+    WSDS::Scheduler* scheduler = new WSDS::Scheduler(nworkers, workerAlg);
+
+    ASSERT_EQ(workerAlg, scheduler->get_workerAlg());
+
+    int ntasks = 100;
+    std::vector<int> in(ntasks);
+    std::vector<long> out(ntasks);
+    std::vector<FibTask*> tasks(ntasks);
+
+    for (int i = 0; i < ntasks; i++) {
+        in[i] = 10;
+        tasks[i] = new FibTask(in[i], &out[i]);
+        scheduler->spawn(tasks[i]);
+    }
+
+    scheduler->wait();
+
+    for (int i = 0; i < ntasks; i++) {
+        ASSERT_EQ(55, out[i]);
+
+        delete tasks[i];
+    }
+
+    delete scheduler;
+}
+
+TEST(Scheduler, spawn_and_wait_100_root_fib_tasks_smallest_deque) {
+    int nworkers = 4;
+    int workerAlg = WSDS::SMALLEST_DEQUE;
+    WSDS::Scheduler* scheduler = new WSDS::Scheduler(nworkers, workerAlg);
+
+    ASSERT_EQ(workerAlg, scheduler->get_workerAlg());
+
+    int ntasks = 100;
+    std::vector<int> in(ntasks);
+    std::vector<long> out(ntasks);
+    std::vector<FibTask*> tasks(ntasks);
+
+    for (int i = 0; i < ntasks; i++) {
+        in[i] = 10;
+        tasks[i] = new FibTask(in[i], &out[i]);
+        scheduler->spawn(tasks[i]);
+    }
+
+    scheduler->wait();
+
+    for (int i = 0; i < ntasks; i++) {
+        ASSERT_EQ(55, out[i]);
+
+        delete tasks[i];
+    }
+
+    delete scheduler;
+}

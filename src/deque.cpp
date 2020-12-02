@@ -73,6 +73,15 @@ void Deque::push_bottom(Task* task) {
     // atomically update bottom index value
     localBot++;
     this->bottom.store(localBot);
+
+    // check for deque overflow
+    int bounds = this->size;
+    if (localBot >= bounds) {
+        internal::Age oldAge;
+        oldAge = this->age.load();
+        std::cout << "ERROR: Deque Overflow: bot = " << localBot << ", top = " << oldAge.top << "\n";
+        exit(1);
+    }
 }
 
 // remove and return a task from the "bottom" of the deque,

@@ -21,7 +21,7 @@ namespace BENCHMARKS {
     /*            Parallel Adding                                   */
     /****************************************************************/
     void parallelAdd(int* vecOut, int* vecA, int* vecB, int size, WSDS::Task* parentTask = NULL);
-    
+
     class ParallelAddTaskPartial : public WSDS::Task {
 
 
@@ -43,7 +43,7 @@ namespace BENCHMARKS {
     /*            Parallel Multiplying                              */
     /****************************************************************/
     void parallelMultiply(int* vecOut, int* vecA, int* vecB, int size, WSDS::Task* parentTask = NULL);
-    
+
     class ParallelMultiplyTaskPartial : public WSDS::Task {
 
 
@@ -78,13 +78,13 @@ namespace BENCHMARKS {
         void execute();
 
     private:
-        
+
         int* vecOut;
         int* vecIn;
         int size;
     };
-        
-        
+
+
     /****************************************************************/
     /*            Parallel Reduce                                   */
     /****************************************************************/
@@ -109,7 +109,7 @@ namespace BENCHMARKS {
         int step;
         int start_idx;
     };
-    
+
 
 }
 

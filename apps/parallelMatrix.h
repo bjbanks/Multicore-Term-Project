@@ -32,10 +32,10 @@ namespace BENCHMARKS {
 
 
     class ParallelMatrixTransposePartial : public WSDS::Task {
-        
+
     public:
 
-        
+
 
         ParallelMatrixTransposePartial(int* x, int size, int block_width, int block_idx);
 
@@ -65,7 +65,7 @@ namespace BENCHMARKS {
     public:
 
         ParallelMatrixMultiplyPartial(int* out, int* A, int* B, int size, int i, int j);
-        
+
         void execute();
 
     private:
@@ -74,14 +74,14 @@ namespace BENCHMARKS {
         int * A;
         int * B;
         int size;
-        
+
         int i; //A row operating on
         int j; //B row operating on
-        
-        
+
+
     };
 
-    
+
 
 
 }

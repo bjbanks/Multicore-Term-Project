@@ -15,7 +15,7 @@ namespace BENCHMARKS {
         Mutex(WSDS::Scheduler* sched);
 
         void acquire();
-        
+
         void release();
 
 

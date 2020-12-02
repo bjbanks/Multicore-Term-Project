@@ -5,14 +5,14 @@ CXX = g++
 LDFLAGS = -lgtest_main -lgtest -lpthread
 CPPFLAGS = -Wall -g -pthread -std=c++11
 
-_DEPS = scheduler.h worker.h deque.h task.h utils.h
+_DEPS = scheduler.h worker.h deque.h task.h
 DEPS = $(patsubst %, $(IDIR)/%, $(_DEPS))
 
 _OBJ = scheduler.o worker.o deque.o task.o
 OBJ = $(patsubst %, $(ODIR)/%, $(_OBJ))
 
 TESTS = tests-runner.cpp scheduler-tests.cpp worker-tests.cpp deque-tests.cpp \
-	task-tests.cpp utils-tests.cpp
+	task-tests.cpp
 
 TASKS = increment-task.h fib-task.h
 

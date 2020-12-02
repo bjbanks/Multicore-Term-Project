@@ -32,11 +32,11 @@ namespace BENCHMARKS {
 
 
     private:
-        
+
         Mutex * mutex;
         Mutex * wlock;
         int num_readers;
-             
+
 
     }
 

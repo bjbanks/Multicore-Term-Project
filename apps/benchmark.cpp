@@ -62,21 +62,21 @@ double do_timed_run(const char* app, int size, int iterations){
     int i;
     double time;
     int *arr1, *arr2, *arr3;
-    int result;   
+    int result;
 
 
     /************************************************************/
     /*                 Parallel Add                             */
     /************************************************************/
     if (!strcmp(app, "parallelAdd")) {
-        
+
         arr1 = new int[size];
         arr2 = new int[size];
-        arr3 = new int[size];        
+        arr3 = new int[size];
 
         init_arr(arr1, size);
         init_arr(arr2, size);
-        
+
 
         gettimeofday(&before, NULL);
         for (i = 0; i < iterations; i++){
@@ -93,16 +93,16 @@ double do_timed_run(const char* app, int size, int iterations){
 
     /************************************************************/
     /*                 Parallel Multiply                        */
-    /************************************************************/    
+    /************************************************************/
     if (!strcmp(app, "parallelMultiply")) {
-        
+
         arr1 = new int[size];
         arr2 = new int[size];
         arr3 = new int[size];
 
         init_arr(arr1, size);
         init_arr(arr2, size);
-        
+
 
         gettimeofday(&before, NULL);
         for (i = 0; i < iterations; i++){
@@ -119,13 +119,13 @@ double do_timed_run(const char* app, int size, int iterations){
 
     /************************************************************/
     /*                 Parallel Copy                            */
-    /************************************************************/    
+    /************************************************************/
     if (!strcmp(app, "parallelCopy")) {
-        
+
         arr1 = new int[size];
         arr2 = new int[size];
 
-        init_arr(arr1, size);        
+        init_arr(arr1, size);
 
         gettimeofday(&before, NULL);
         for (i = 0; i < iterations; i++){
@@ -140,7 +140,7 @@ double do_timed_run(const char* app, int size, int iterations){
 
     /************************************************************/
     /*                 Parallel Reduce                          */
-    /************************************************************/    
+    /************************************************************/
     if (!strcmp(app, "parallelReduce")){
 
         arr1 = new int[size];
@@ -160,7 +160,7 @@ double do_timed_run(const char* app, int size, int iterations){
 
     /************************************************************/
     /*                 Parallel Transpose                       */
-    /************************************************************/    
+    /************************************************************/
     if (!strcmp(app, "parallelTranspose")){
 
         arr1 = new int[size*size];
@@ -179,7 +179,7 @@ double do_timed_run(const char* app, int size, int iterations){
 
     /************************************************************/
     /*                 Parallel Mat Multiply                    */
-    /************************************************************/    
+    /************************************************************/
     if (!strcmp(app, "parallelMatMultiply")){
 
 
@@ -209,7 +209,7 @@ double do_timed_run(const char* app, int size, int iterations){
 
     time = t2d(&after) - t2d(&before);
 
-    return time / iterations;   
+    return time / iterations;
 
 }
 
@@ -244,7 +244,7 @@ int main(int argc, char* argv[]){
     //initialize the parallel array library by registering the scheduler
     BENCHMARKS::parallelArrayInit(scheduler, task_work_size);
     BENCHMARKS::parallelMatrixInit(scheduler, task_work_size);
-   
+
 
     /*std::cout << "Running Parallel Add: ";
     runtime = do_timed_run("parallelAdd", datasize, iterations);
