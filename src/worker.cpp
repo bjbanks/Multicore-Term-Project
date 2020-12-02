@@ -1,7 +1,7 @@
 /*
  * Copyright 2020 Bryson Banks and David Campbell.  All rights reserved.
  */
-#include <iostream>
+
 #include "worker.h"
 #include "scheduler.h"
 
@@ -37,27 +37,24 @@ void Worker::add_victim(Worker* victim) {
 }
 
 // add a task to a worker's ready pool
-void Worker::add_ready_task(Task* task, bool force) {
-    // if using work stealing, only the worker itself will add to their own
-    // ready deque (minus the initial root task assigned by the scheduler),
-    // thus locking is not needed; however, other algs require locking
+void Worker::add_ready_task(Task* task, bool forceSelf, bool forceNotSelf) {
+    Worker* worker = this;
 
-    if (this->workerAlg != WORK_STEALING) {
-        Worker* worker = this;
-
-        if (!force) {
-            // if not force, determine worker based on worker algorithm via Scheduler
+    if (!forceSelf) {
+        if (this->workerAlg != WORK_STEALING || forceNotSelf) {
+            // determine worker based on worker algorithm via Scheduler
             worker = this->scheduler->next_worker();
-        }
 
-        std::unique_lock<std::mutex> lock(worker->dequeMutex);
-        worker->readyDeq->push_bottom(task);
-        lock.unlock();
+            while (forceNotSelf && worker == this) {
+                // force a random worker, need for this should be rare
+                worker = this->scheduler->next_worker(true);
+            }
+        }
     }
-    else {
-        // using work stealing, add all spawned task to current worker
-        this->readyDeq->push_bottom(task);
-    }
+
+    std::unique_lock<std::mutex> lock(worker->dequeMutex);
+    worker->readyDeq->push_bottom(task);
+    lock.unlock();
 }
 
 // indicate this worker should be stopped
@@ -71,14 +68,9 @@ void Worker::work_loop() {
     while(!this->stopped.load()) {
 
         // attempt to collect next ready task
-        if (this->workerAlg != WORK_STEALING) {
-            std::unique_lock<std::mutex> lock(this->dequeMutex);
-            this->assignedTask = this->readyDeq->pop_bottom();
-            lock.unlock();
-        }
-        else {
-            this->assignedTask = this->readyDeq->pop_bottom();
-        }
+        std::unique_lock<std::mutex> lock(this->dequeMutex);
+        this->assignedTask = this->readyDeq->pop_bottom();
+        lock.unlock();
 
         // if no task, attempt to steal one if using stealing
         if (this->assignedTask == nullptr && this->workerAlg == WORK_STEALING) {
@@ -93,6 +85,7 @@ void Worker::work_loop() {
             if (!this->assignedTask->is_finished()) {
                 this->assignedTask->process(this);
             }
+            this->assignedTask = nullptr;
         }
 
     }
@@ -101,70 +94,57 @@ void Worker::work_loop() {
 // secondary work loop for when the task being processed calls a wait()
 // and can not proceed until all its children tasks have finished
 void Worker::wait_loop() {
+
     // move current assigned task to a waiting state
     Task* waitingTask = this->assignedTask;
     bool waitingTaskReady = false;
     this->assignedTask = nullptr;
-
-    Task* lastTask = NULL;
 
     // continue in wait loop until a stop is indicated,
     // or the waitingTask has become ready
     while (!this->stopped.load() && !waitingTaskReady) {
 
         // attempt to collect next ready task
-        if (this->workerAlg != WORK_STEALING) {
-            std::unique_lock<std::mutex> lock(this->dequeMutex);
-            this->assignedTask = this->readyDeq->pop_bottom();
-            lock.unlock();
-        }
-        else {
-            this->assignedTask = this->readyDeq->pop_bottom();
+        std::unique_lock<std::mutex> lock(this->dequeMutex);
+        this->assignedTask = this->readyDeq->pop_bottom();
+        lock.unlock();
+
+        if (this->assignedTask == nullptr) {
+            // ready deq empty, attempt to steal a task if using stealing
+            if (this->workerAlg == WORK_STEALING) {
+                std::this_thread::yield();
+                this->assignedTask = steal_task();
+            }
         }
 
-        // if no task, attempt to steal one if using stealing
-        if (this->assignedTask == nullptr && this->workerAlg == WORK_STEALING) {
-            // no local ready task, attempt to steal one
-            this->assignedTask = steal_task();
-        }
-
-        // if we have an assigned task, process it
+        // if we have an assigned task, check if workable and process it
         if (this->assignedTask != nullptr) {
-
-            //            std::cout << "Trying to process task " << this->assignedTask->getId() << std::endl;
-
             if (!this->assignedTask->is_finished()) {
 
                 // IMPORTANT NOTE!
                 // In order to process the task here, it must originate from the
                 // waiting task (be a child, grandchild, great-grandchild, ...),
-                // otherwise deadlock is possible.
+                // otherwise a hang is possible where no worker can makes progress.
 
-                // trace parents looking for waiting task
+                // trace parents of chosen task looking for the waiting task
                 Task* parent = this->assignedTask->get_parent();
                 while (parent != nullptr && parent != waitingTask) {
                     parent = parent->get_parent();
                 }
 
                 if (parent == waitingTask) {
-                    //                    std::cout << "Success process task " << this->assignedTask->getId() << std::endl;
-                    // originated from waiting task, process it
+                    // originated from waiting task, process it to make progress
                     this->assignedTask->process(this);
                 }
                 else {
-                    // did not originate from waiting task,
-                    // add the popped task back to some ready deque
-                    //                    std::cout << "Skip process task " << this->assignedTask->getId() << std::endl;
-                    if (lastTask == this->assignedTask) exit(-1);
-                    lastTask = this->assignedTask;
+                    // did not originate from waiting task and is not workable,
+                    // add the task to the ready deque of some other worker
+
                     Task* tmpTask = this->assignedTask;
-                    this->assignedTask = nullptr;
-                    this->add_ready_task(tmpTask); //force to remain in the same queue
+                    this->add_ready_task(tmpTask, false, true); // forceNotSelf = true
                 }
             }
-        }
-        else {
-            std::this_thread::yield();
+            this->assignedTask = nullptr;
         }
 
         // check if waiting task has become available
@@ -192,9 +172,13 @@ Task* Worker::steal_task() {
     return victimDeq->pop_top();
 }
 
-// get the current size of the reqdy deque (number of waiting ready tasks)
+// get the current size of the ready deque (number of waiting ready tasks)
 int Worker::get_ready_deque_size() {
-    return this->readyDeq->get_num_tasks();
+    std::unique_lock<std::mutex> lock(this->dequeMutex);
+    int ntasks = this->readyDeq->get_num_tasks();
+    lock.unlock();
+
+    return ntasks;
 }
 
 } // namespace internal

@@ -61,6 +61,9 @@ public:
     // get the current number of tasks in the deque
     int get_num_tasks(void);
 
+    // get allocated deque size
+    size_t get_size(void) { return this->size; }
+
 private:
     int id;
     size_t size;
@@ -71,7 +74,6 @@ private:
 #ifdef _UNIT_TESTING
 public:
     int get_id(void) { return this->id; }
-    size_t get_size(void) { return this->size; }
     Task** get_collection(void) { return this->collection; }
     unsigned int get_tag(void) { return this->age.load().tag; }
     int get_top(void) { return this->age.load().top; }

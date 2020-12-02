@@ -2,12 +2,11 @@
  * Copyright 2020 Bryson Banks and David Campbell.  All rights reserved.
  */
 
-#include <iostream>
 #include "task.h"
 
 namespace WSDS {
 
-    std::atomic<int> next_task_id{0};
+std::atomic<int> next_task_id{0}; // used to id tasks for debugging
 
 Task::Task() {
     this->worker = nullptr;
@@ -18,12 +17,6 @@ Task::Task() {
 }
 
 Task::~Task() {}
-
-int Task::getId(){
-
-    return this->id;
-
-}
 
 // function worker will call this in order to process the task
 void Task::process(internal::Worker* worker) {
@@ -96,6 +89,11 @@ void Task::finish_task() {
 // get the parent of the current task
 Task* Task::get_parent() {
     return this->parent;
+}
+
+// returns unique task id
+int Task::get_id() {
+    return this->id;
 }
 
 } // namespace WSDS

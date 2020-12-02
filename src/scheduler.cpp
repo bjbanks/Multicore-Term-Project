@@ -40,22 +40,13 @@ Scheduler::~Scheduler() {
 }
 
 // schedules the root task for computation by the workers
-void Scheduler::spawn(Task* rootTask, int workerIndex) {
+void Scheduler::spawn(Task* rootTask) {
     // add task to collection of root tasks
     this->rootTasks.push_back(rootTask);
 
-    // add root task to ready deque of worker with index workerIndex
-    this->workers[workerIndex].worker->add_ready_task(rootTask, true);
-
-    // update round robin index if using round robin alg
-    if (this->workerAlg == ROUND_ROBIN) {
-        std::unique_lock<std::mutex> lock(this->roundRobinMutex);
-        this->roundRobinIndex = workerIndex + 1;
-        if (this->roundRobinIndex >= this->nworkers) {
-            this->roundRobinIndex = 0;
-        }
-        lock.unlock();
-    }
+    // chose a worker, and add root task to ready deque of chosen worker
+    internal::Worker* worker = this->next_worker();
+    worker->add_ready_task(rootTask, true, false); // forceSelf = true
 }
 
 // called by the user application to wait for computation of all
@@ -70,30 +61,40 @@ void Scheduler::wait(void) {
 
         // use CV to wait until task is finished
         while (!this->rootTasks[i]->is_finished()) {
-            this->rootTasks[i]->finishedCV.wait(lock);
+            // 1 second timeout just in case something has gone wrong
+            this->rootTasks[i]->finishedCV.wait_for(lock, std::chrono::seconds(1));
         }
 
         // release lock
         lock.unlock();
     }
 
+    // computation of tasks have been completed and acknowledged, clear out pool
     this->rootTasks.clear();
 }
 
 // choose the next worker to get a task based on worker algorithm,
 // not needed when using work stealing
-internal::Worker* Scheduler::next_worker() {
+internal::Worker* Scheduler::next_worker(bool forceRandom) {
     internal::Worker* worker;
 
-    switch(this->workerAlg) {
+    int alg = this->workerAlg;
+    if (forceRandom) {
+        alg = RANDOM;
+    }
+
+    switch(alg) {
         case ROUND_ROBIN:
             {
                 std::unique_lock<std::mutex> lock(this->roundRobinMutex);
                 worker = this->workers[this->roundRobinIndex].worker;
+
+                // increment round robin index
                 this->roundRobinIndex++;
                 if (this->roundRobinIndex >= this->nworkers) {
                     this->roundRobinIndex = 0;
                 }
+
                 lock.unlock();
             }
             break;

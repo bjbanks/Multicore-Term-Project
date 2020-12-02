@@ -55,7 +55,7 @@ public:
     void add_victim(Worker* victim);
 
     // add a task to the worker's ready pool
-    void add_ready_task(Task* task, bool force = false);
+    void add_ready_task(Task* task, bool forceSelf = false, bool forceNotSelf = false);
 
     // indicate this worker should be stopped
     void stop(void);
@@ -66,9 +66,6 @@ public:
     // secondary work loop for when the task being processed calls a wait()
     // and can not proceed until all its children tasks have finished
     void wait_loop(void);
-
-    // called by the scheduler to assign a "root" task to the master worker
-    void assign_root_task(Task* task);
 
     // get the current size of the reqdy deque (number of waiting ready tasks)
     int get_ready_deque_size(void);

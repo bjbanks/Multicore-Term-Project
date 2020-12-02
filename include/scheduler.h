@@ -7,6 +7,7 @@
 
 #include <iostream>
 #include <random>
+#include <chrono>
 #include <limits.h>
 #include "worker.h"
 
@@ -46,7 +47,7 @@ public:
     ~Scheduler();
 
     // schedules the root task for computation by the workers
-    void spawn(Task* rootTask, int workerIndex = 0);
+    void spawn(Task* rootTask);
 
     // called by the user application to wait for computation of all
     // root tasks to finish
@@ -54,7 +55,7 @@ public:
 
     // choose the next worker to get a task based on worker algorithm,
     // not needed when using work stealing
-    internal::Worker* next_worker(void);
+    internal::Worker* next_worker(bool forceRandom = false);
 
     std::default_random_engine generator;
     std::uniform_int_distribution<int> distribution;
