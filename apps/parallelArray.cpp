@@ -67,17 +67,17 @@ namespace BENCHMARKS {
         int i;
 
         ParallelAddTaskPartial* tasks[num_sub_tasks];
-         
+
 
         /*Spawn a bunch of congruent work to divide up array to do vector adds*/
         for (i = 0; i < num_sub_tasks; i++){
 
             int offset = i*partial_size;
-            
+
             tasks[i] = new ParallelAddTaskPartial(&vecOut[offset], &vecA[offset], &vecB[offset], partial_size);
-            
+
             Spawn(tasks[i], parentTask);
-            
+
         }
 
         /*wait until all child tasks are done*/
@@ -97,7 +97,7 @@ namespace BENCHMARKS {
         this->vecOut = vecOut;
         this->size = size;
     }
-    
+
     void ParallelAddTaskPartial::execute(){
 
         for(int i = 0; i < this->size; i++) {
@@ -124,12 +124,12 @@ namespace BENCHMARKS {
         for (i = 0; i < num_sub_tasks; i++){
 
             int offset = i*partial_size;
-            
+
             tasks[i] = new ParallelMultiplyTaskPartial(&vecOut[offset], &vecA[offset], &vecB[offset], partial_size);
 
             //            std::cout << "Task " << parentTask->getId() << " Spawning " << tasks[i]->getId() << std::endl;
             Spawn(tasks[i], parentTask);
-            
+
         }
 
         /*wait until all child tasks are done*/
@@ -151,7 +151,7 @@ namespace BENCHMARKS {
         this->vecOut = vecOut;
         this->size = size;
     }
-    
+
     void ParallelMultiplyTaskPartial::execute(){
 
         //        std::cout << "Task " << this->getId() << "in parallel multiply" << std:: endl;
@@ -182,11 +182,11 @@ namespace BENCHMARKS {
         for (i = 0; i < num_sub_tasks; i++){
 
             int offset = i*partial_size;
-            
+
             tasks[i] = new ParallelCopyTaskPartial(&out[offset], &in[offset], partial_size);
 
             Spawn(tasks[i], parentTask);
-            
+
         }
 
         /*wait until all child tasks are done*/
@@ -201,7 +201,7 @@ namespace BENCHMARKS {
 
     }
 
-    
+
     ParallelCopyTaskPartial::ParallelCopyTaskPartial(int* vecOut, int* vecIn, int size){
 
         this->vecOut = vecOut;
@@ -216,7 +216,7 @@ namespace BENCHMARKS {
         for (int i = 0; i < this->size; i++){
             this->vecOut[i] = this->vecIn[i];
         }
-        
+
     }
 
 
@@ -231,7 +231,7 @@ namespace BENCHMARKS {
 
         int arrIn[size];
         int out[size];
-        
+
         parallelCopy(arrIn, in, size, parentTask);
 
         int num_steps = (int)log2((double)size);
@@ -242,26 +242,26 @@ namespace BENCHMARKS {
         for ( int step = 1; step <= num_steps; step++){
 
             for (int task = 0; task < num_sub_tasks; task++){
-                                
+
                 tasks[task] = new ParallelReduceTaskPartial(out, arrIn, task*work_per_subtask+1, size, step);
                 //                std::cout << "Task " << parentTask->getId() << " Spawning " << tasks[task]->getId() << std::endl;
-                Spawn(tasks[task], parentTask);                
-                
+                Spawn(tasks[task], parentTask);
+
             }
 
-            
+
             //            std::cout << "Task " << parentTask->getId() << " waiting" << std::endl;
             Wait(parentTask);
             //            std::cout << "Task " << parentTask->getId() << " done waiting" << std::endl;
 
             parallelCopy(arrIn, out, size, parentTask);
-            
-        }     
+
+        }
         return out[0];
-        
+
     }
 
-    ParallelReduceTaskPartial::ParallelReduceTaskPartial(int* arrOut, int* arrIn, int start_idx, int size, int step){       
+    ParallelReduceTaskPartial::ParallelReduceTaskPartial(int* arrOut, int* arrIn, int start_idx, int size, int step){
         this->arrOut = arrOut;
         this->arrIn = arrIn;
         this->size = size;
@@ -285,9 +285,9 @@ namespace BENCHMARKS {
                 arrOut[i-1] = arrIn[2*i-2] + arrIn[2*i-1];
 
             }
-        }        
+        }
 
-    }    
+    }
 
 
 }

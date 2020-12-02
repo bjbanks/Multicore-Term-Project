@@ -156,7 +156,7 @@ void Worker::wait_loop() {
                     // add the popped task back to some ready deque
                     //                    std::cout << "Skip process task " << this->assignedTask->getId() << std::endl;
                     if (lastTask == this->assignedTask) exit(-1);
-                    lastTask = this->assignedTask; 
+                    lastTask = this->assignedTask;
                     Task* tmpTask = this->assignedTask;
                     this->assignedTask = nullptr;
                     this->add_ready_task(tmpTask); //force to remain in the same queue

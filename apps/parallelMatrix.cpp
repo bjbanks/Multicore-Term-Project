@@ -7,7 +7,7 @@ namespace BENCHMARKS {
 
     WSDS::Scheduler* parSchedMat;
     int work_per_subtaskm;
-    
+
 
     void parallelMatrixInit(WSDS::Scheduler* sched, int task_work_size){
         parSchedMat = sched;
@@ -83,9 +83,9 @@ namespace BENCHMARKS {
                     x[idxA] = x[idxB];
                     x[idxB] = temp;
                 }
-                
+
             }
-        }                          
+        }
 
     }
 
@@ -106,7 +106,7 @@ namespace BENCHMARKS {
         for (i = 0; i < num_sub_tasks; i++){
             for (j = 0; j < num_sub_tasks; j++){
 
-                tasks[i][j] = new ParallelMatrixMultiplyPartial(out, A, B, size, i, j);                
+                tasks[i][j] = new ParallelMatrixMultiplyPartial(out, A, B, size, i, j);
                 //                std::cout << "spawning " << tasks[i][j]->getId() << std::endl;
                 parSchedMat->spawn(tasks[i][j]);
             }
@@ -138,13 +138,13 @@ namespace BENCHMARKS {
 
         //multiply the elements of the array together
         int* temp = new int[size];
-        parallelMultiply(temp, &A[i*size], &B[j*size], size, this);        
+        parallelMultiply(temp, &A[i*size], &B[j*size], size, this);
         out[GET_IDX(i, j, size)] = parallelReduce(temp, size, this);
         delete temp;
 
 
     }
 
-    
-     
+
+
 }
