@@ -7,6 +7,7 @@
 #include <string.h>
 #include <unistd.h>
 #include <assert.h>
+#include "parallelMatrix.h"
 
 #define NWORKERS 1
 
@@ -18,6 +19,17 @@ void init_arr(int* arr, int size){
 
 
 }
+
+void init_matrix(int * arr, int size){
+
+    for (int i = 0; i < size; i++){
+        for (int j = 0; j < size; j++){
+            arr[GET_IDX(i, j, size)] = j;
+        }
+    }
+
+}
+
 
 void print_arr(int* arr, int size){
 
@@ -32,6 +44,14 @@ void print_arr(int* arr, int size){
 
 }
 
+void print_matrix(int * matrix, int size){
+
+    for (int i = 0; i < size; i ++){
+        print_arr(&matrix[i*size], size);
+    }
+
+}
+
 double t2d(struct timeval *t) {
     return t->tv_sec*1000000.0 + t->tv_usec;
 }
@@ -42,7 +62,7 @@ double do_timed_run(const char* app, int size, int iterations){
     int i;
     double time;
     int *arr1, *arr2, *arr3;
-    int result;
+    int result;   
 
 
     /************************************************************/
@@ -52,7 +72,7 @@ double do_timed_run(const char* app, int size, int iterations){
         
         arr1 = new int[size];
         arr2 = new int[size];
-        arr3 = new int[size];
+        arr3 = new int[size];        
 
         init_arr(arr1, size);
         init_arr(arr2, size);
@@ -62,6 +82,11 @@ double do_timed_run(const char* app, int size, int iterations){
         for (i = 0; i < iterations; i++){
             BENCHMARKS::parallelAdd(arr3, arr1, arr2, size);
         }
+        gettimeofday(&after, NULL);
+
+        delete arr1;
+        delete arr2;
+        delete arr3;
 
 
     }
@@ -83,6 +108,11 @@ double do_timed_run(const char* app, int size, int iterations){
         for (i = 0; i < iterations; i++){
             BENCHMARKS::parallelMultiply(arr3, arr1, arr2, size);
         }
+        gettimeofday(&after, NULL);
+
+        delete arr1;
+        delete arr2;
+        delete arr3;
 
 
     }
@@ -101,6 +131,10 @@ double do_timed_run(const char* app, int size, int iterations){
         for (i = 0; i < iterations; i++){
             BENCHMARKS::parallelCopy(arr2, arr1, size);
         }
+        gettimeofday(&after, NULL);
+
+        delete arr1;
+        delete arr2;
 
     }
 
@@ -116,18 +150,61 @@ double do_timed_run(const char* app, int size, int iterations){
         gettimeofday(&before, NULL);
         for (i = 0; i < iterations; i++){
             result = BENCHMARKS::parallelReduce(arr1, size);
-            std::cout << result << " " << ((size*(size+1))/2) << std::endl;
             assert(result == ((size*(size+1))/2));
         }
+        gettimeofday(&after, NULL);
 
-
+        delete arr1;
 
     }
 
+    /************************************************************/
+    /*                 Parallel Transpose                       */
+    /************************************************************/    
+    if (!strcmp(app, "parallelTranspose")){
+
+        arr1 = new int[size*size];
+
+        init_matrix(arr1, size);
+
+        gettimeofday(&before, NULL);
+        for (i = 0; i < iterations; i++){
+            BENCHMARKS::parallelMatrixTranspose(arr1, size);
+        }
+        gettimeofday(&after, NULL);
+
+        delete arr1;
+
+    }
+
+    /************************************************************/
+    /*                 Parallel Mat Multiply                    */
+    /************************************************************/    
+    if (!strcmp(app, "parallelMatMultiply")){
 
 
-    gettimeofday(&after, NULL);
+        arr1 = new int[size*size];
+        arr2 = new int[size*size];
+        arr3 = new int[size*size];
 
+        init_matrix(arr1, size);
+        init_matrix(arr2, size);
+
+        BENCHMARKS::parallelMatrixTranspose(arr2, size);
+
+        gettimeofday(&before, NULL);
+        for (i = 0; i < iterations; i++){
+            BENCHMARKS::parallelMatrixMultiply(arr3, arr1, arr2, size);
+        }
+        gettimeofday(&after, NULL);
+
+        print_matrix(arr3, size);
+
+        delete arr1;
+        delete arr2;
+        delete arr3;
+
+    }
 
 
     time = t2d(&after) - t2d(&before);
@@ -140,18 +217,36 @@ double do_timed_run(const char* app, int size, int iterations){
 int main(int argc, char* argv[]){
 
     double runtime;
-    int task_work_size = atoi(argv[1]);
-    int datasize = atoi(argv[2]);
+    int task_work_size = 1<<atoi(argv[1]);
+    int datasize = 1<<atoi(argv[2]);
     int iterations = atoi(argv[3]);
+    char* policy = argv[4];
+    WSDS::Scheduler* scheduler;
 
-    WSDS::Scheduler* scheduler = new WSDS::Scheduler(NWORKERS, true);
+    //configure scheduler based on command line input
+    if (!strcmp(policy, "smallest")) {
+        scheduler = new WSDS::Scheduler(NWORKERS, WSDS::SMALLEST_DEQUE);
+    } else if (!strcmp(policy, "stealing")) {
+        scheduler = new WSDS::Scheduler(NWORKERS, WSDS::WORK_STEALING);
+    } else if (!strcmp(policy, "random")) {
+        scheduler = new WSDS::Scheduler(NWORKERS, WSDS::RANDOM);
+    } else if (!strcmp(policy, "roundrobin")) {
+        scheduler = new WSDS::Scheduler(NWORKERS, WSDS::ROUND_ROBIN);
+    } else {
+
+        std::cout << "Error: Unknown Scheduler Policy." << std:: endl;
+        std::cout << " Please use one of the folllowing: smallest | stealing | random | roundrobin" << std::endl;
+        exit(-1);
+
+    }
 
 
     //initialize the parallel array library by registering the scheduler
     BENCHMARKS::parallelArrayInit(scheduler, task_work_size);
+    BENCHMARKS::parallelMatrixInit(scheduler, task_work_size);
    
 
-    std::cout << "Running Parallel Add: ";
+    /*std::cout << "Running Parallel Add: ";
     runtime = do_timed_run("parallelAdd", datasize, iterations);
     std::cout << "Result: " << runtime << " ns" << std::endl << std::endl;
 
@@ -165,9 +260,17 @@ int main(int argc, char* argv[]){
 
     std::cout << "Running Parallel Reduce:" << std::endl;
     runtime = do_timed_run("parallelReduce", datasize, iterations);
+    std::cout << "Result: " << runtime << " ns" << std::endl << std::endl;*/
+
+    /*std::cout << "Running Parallel Transpose:" << std::endl;
+    runtime = do_timed_run("parallelTranspose", datasize, iterations);
+    std::cout << "Result: " << runtime << " ns" << std::endl << std::endl;*/
+
+    std::cout << "Running Parallel Mat Multiply:" << std::endl;
+    runtime = do_timed_run("parallelMatMultiply", datasize, iterations);
     std::cout << "Result: " << runtime << " ns" << std::endl << std::endl;
 
-    
+
     return 0;
 
 }

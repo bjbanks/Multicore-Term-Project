@@ -11,7 +11,7 @@ DEPS = $(patsubst %, $(IDIR)/%, $(_DEPS))
 _OBJ = scheduler.o worker.o deque.o task.o
 OBJ = $(patsubst %, $(ODIR)/%, $(_OBJ))
 
-APPS = parallelArray.cpp
+APPS = parallelArray.cpp parallelMatrix.cpp
 BENCHMARK = benchmark.cpp
 
 all: fibonacci

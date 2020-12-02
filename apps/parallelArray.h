@@ -20,7 +20,7 @@ namespace BENCHMARKS {
     /****************************************************************/
     /*            Parallel Adding                                   */
     /****************************************************************/
-    void parallelAdd(int* vecOut, int* vecA, int* vecB, int size);
+    void parallelAdd(int* vecOut, int* vecA, int* vecB, int size, WSDS::Task* parentTask = NULL);
     
     class ParallelAddTaskPartial : public WSDS::Task {
 
@@ -42,7 +42,7 @@ namespace BENCHMARKS {
     /****************************************************************/
     /*            Parallel Multiplying                              */
     /****************************************************************/
-    void parallelMultiply(int* vecOut, int* vecA, int* vecB, int size);
+    void parallelMultiply(int* vecOut, int* vecA, int* vecB, int size, WSDS::Task* parentTask = NULL);
     
     class ParallelMultiplyTaskPartial : public WSDS::Task {
 
@@ -66,7 +66,7 @@ namespace BENCHMARKS {
     /*            Parallel Copying                                  */
     /****************************************************************/
 
-    void parallelCopy(int* out, int* in, int size);
+    void parallelCopy(int* out, int* in, int size, WSDS::Task* parentTask = NULL);
 
     class ParallelCopyTaskPartial : public WSDS::Task {
 
@@ -89,7 +89,7 @@ namespace BENCHMARKS {
     /*            Parallel Reduce                                   */
     /****************************************************************/
 
-    int parallelReduce(int* in, int size);
+    int parallelReduce(int* in, int size,  WSDS::Task* parentTask = NULL);
 
 
     class ParallelReduceTaskPartial : public WSDS::Task {
@@ -97,13 +97,14 @@ namespace BENCHMARKS {
 
     public:
 
-        ParallelReduceTaskPartial(int* arr, int start_idx, int size, int step);
+        ParallelReduceTaskPartial(int* arrOut, int* arrIn, int start_idx, int size, int step);
 
         void execute();
 
     private:
 
-        int* arr;
+        int* arrOut;
+        int* arrIn;
         int size;
         int step;
         int start_idx;
