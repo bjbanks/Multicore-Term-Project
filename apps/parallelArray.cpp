@@ -12,6 +12,41 @@ namespace BENCHMARKS {
     WSDS::Scheduler* parSched;
     int work_per_subtask;
 
+    void print_arr(int* arr, int size){
+
+        for (int i = 0; i < size; i ++){
+
+            std::cout << arr[i] << " ";
+
+        }
+
+        std::cout << std::endl;
+
+
+    }
+
+    //if parenttask is NULL default to sheduler spawning.  If non-null, the user wants
+    //task to be tracked as a subtask of a pre-existing task
+    void Spawn(WSDS::Task* newTask, WSDS::Task* parentTask){
+
+        if (parentTask == NULL){
+            parSched->spawn(newTask);
+        } else {
+            parentTask->spawn(newTask);
+        }
+
+    }
+
+    void Wait(WSDS::Task* parentTask){
+
+        if (parentTask == NULL){
+            parSched->wait();
+        } else {
+            parentTask->wait();
+        }
+
+    }
+
 
     /****************************************************************/
     /*            Library Init                                      */
@@ -24,7 +59,8 @@ namespace BENCHMARKS {
     /****************************************************************/
     /*            Parallel Adding                                   */
     /****************************************************************/
-    void parallelAdd(int* vecOut, int* vecA, int* vecB, int size) {
+    void parallelAdd(int* vecOut, int* vecA, int* vecB, int size, WSDS::Task* parentTask) {
+
 
         int num_sub_tasks = size / work_per_subtask;
         int partial_size = size  / num_sub_tasks;
@@ -39,13 +75,13 @@ namespace BENCHMARKS {
             int offset = i*partial_size;
             
             tasks[i] = new ParallelAddTaskPartial(&vecOut[offset], &vecA[offset], &vecB[offset], partial_size);
-
-            parSched->spawn(tasks[i]);
+            
+            Spawn(tasks[i], parentTask);
             
         }
 
         /*wait until all child tasks are done*/
-        parSched->wait();
+        Wait(parentTask);
 
         /*clean up the sub tasks*/
         for (i = 0; i < num_sub_tasks; i++){
@@ -73,13 +109,15 @@ namespace BENCHMARKS {
     /****************************************************************/
     /*            Parallel Mutliply                                 */
     /****************************************************************/
-    void parallelMultiply(int* vecOut, int* vecA, int* vecB, int size) {
+    void parallelMultiply(int* vecOut, int* vecA, int* vecB, int size, WSDS::Task* parentTask) {
 
         int i;
         int num_sub_tasks = size / work_per_subtask;
         int partial_size = size  / num_sub_tasks;
 
         ParallelMultiplyTaskPartial* tasks[num_sub_tasks];
+
+        //        std::cout << "Task " << parentTask->getId() << " running parallel multiply" << std:: endl;
 
 
         /*Spawn a bunch of congruent work to divide up array to do vector adds*/
@@ -89,12 +127,15 @@ namespace BENCHMARKS {
             
             tasks[i] = new ParallelMultiplyTaskPartial(&vecOut[offset], &vecA[offset], &vecB[offset], partial_size);
 
-            parSched->spawn(tasks[i]);
+            //            std::cout << "Task " << parentTask->getId() << " Spawning " << tasks[i]->getId() << std::endl;
+            Spawn(tasks[i], parentTask);
             
         }
 
         /*wait until all child tasks are done*/
-        parSched->wait();
+        //        std::cout << "Task " << parentTask->getId() << " waiting" << std::endl;
+        Wait(parentTask);
+        //        std::cout << "Task " << parentTask->getId() << " done waiting" << std::endl;
 
         /*clean up the sub tasks*/
         for (i = 0; i < num_sub_tasks; i++){
@@ -113,6 +154,8 @@ namespace BENCHMARKS {
     
     void ParallelMultiplyTaskPartial::execute(){
 
+        //        std::cout << "Task " << this->getId() << "in parallel multiply" << std:: endl;
+
         for(int i = 0; i < this->size; i++) {
             vecOut[i] = vecA[i] * vecB[i];
         }
@@ -124,7 +167,9 @@ namespace BENCHMARKS {
     /*            Parallel Copying                                  */
     /****************************************************************/
 
-    void parallelCopy(int* out, int* in, int size){
+    void parallelCopy(int* out, int* in, int size, WSDS::Task* parentTask){
+
+        //        std::cout << "Task " << parentTask->getId() << "running parallel copy" << std:: endl;
 
         int i;
         int num_sub_tasks = size / work_per_subtask;
@@ -140,12 +185,12 @@ namespace BENCHMARKS {
             
             tasks[i] = new ParallelCopyTaskPartial(&out[offset], &in[offset], partial_size);
 
-            parSched->spawn(tasks[i]);
+            Spawn(tasks[i], parentTask);
             
         }
 
         /*wait until all child tasks are done*/
-        parSched->wait();
+        Wait(parentTask);
 
         /*clean up the sub tasks*/
         for (i = 0; i < num_sub_tasks; i++){
@@ -166,6 +211,8 @@ namespace BENCHMARKS {
     }
 
     void ParallelCopyTaskPartial::execute(){
+
+        //        std::cout << "Task " << this->getId() << "in parallel copy" << std:: endl;
         for (int i = 0; i < this->size; i++){
             this->vecOut[i] = this->vecIn[i];
         }
@@ -177,60 +224,56 @@ namespace BENCHMARKS {
     /*            Parallel Reduce                                   */
     /****************************************************************/
 
-void print_arr(int* arr, int size){
 
-    for (int i = 0; i < size; i ++){
+    int parallelReduce(int* in, int size, WSDS::Task* parentTask){
 
-        std::cout << arr[i] << " ";
+        //        std::cout << "Task " << parentTask->getId() << "running parallel reduce" << std:: endl;
 
-    }
-
-    std::cout << std::endl;
-
-
-}
-
-    int parallelReduce(int* in, int size){
-
+        int arrIn[size];
         int out[size];
         
-        parallelCopy(out, in, size);
+        parallelCopy(arrIn, in, size, parentTask);
 
         int num_steps = (int)log2((double)size);
         int num_sub_tasks = size / work_per_subtask;
 
-
-        
         ParallelReduceTaskPartial* tasks[size];
-
-        print_arr(out, size);
 
         for ( int step = 1; step <= num_steps; step++){
 
             for (int task = 0; task < num_sub_tasks; task++){
-
-                tasks[task] = new ParallelReduceTaskPartial(out, task*work_per_subtask+1, size, step);
-                parSched->spawn(tasks[task]);                
+                                
+                tasks[task] = new ParallelReduceTaskPartial(out, arrIn, task*work_per_subtask+1, size, step);
+                //                std::cout << "Task " << parentTask->getId() << " Spawning " << tasks[task]->getId() << std::endl;
+                Spawn(tasks[task], parentTask);                
                 
             }
-            
-            parSched->wait();
 
-            print_arr(out, size);
+            
+            //            std::cout << "Task " << parentTask->getId() << " waiting" << std::endl;
+            Wait(parentTask);
+            //            std::cout << "Task " << parentTask->getId() << " done waiting" << std::endl;
+
+            parallelCopy(arrIn, out, size, parentTask);
             
         }     
         return out[0];
         
     }
 
-    ParallelReduceTaskPartial::ParallelReduceTaskPartial(int* arr, int start_idx, int size, int step){       
-        this->arr = arr;
+    ParallelReduceTaskPartial::ParallelReduceTaskPartial(int* arrOut, int* arrIn, int start_idx, int size, int step){       
+        this->arrOut = arrOut;
+        this->arrIn = arrIn;
         this->size = size;
         this->step = step;
         this->start_idx = start_idx;
     }
 
+
     void ParallelReduceTaskPartial::execute(){
+
+        //        std::cout << "Task " << this->getId() << "in parallel reduce" << std:: endl;
+
 
         if (start_idx > ( size / (1<<step))) {
             return; //nothing to do
@@ -238,7 +281,9 @@ void print_arr(int* arr, int size){
 
         for (int i = start_idx; i <= start_idx + work_per_subtask; i++){
             if (i <= ( size / (1<<step) ) ) { //i <= N/2^h
-                arr[i-1] = arr[2*i-2] + arr[2*i-1];
+
+                arrOut[i-1] = arrIn[2*i-2] + arrIn[2*i-1];
+
             }
         }        
 

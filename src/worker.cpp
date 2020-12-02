@@ -106,9 +106,12 @@ void Worker::wait_loop() {
     bool waitingTaskReady = false;
     this->assignedTask = nullptr;
 
+    Task* lastTask = NULL;
+
     // continue in wait loop until a stop is indicated,
     // or the waitingTask has become ready
     while (!this->stopped.load() && !waitingTaskReady) {
+
         // attempt to collect next ready task
         if (this->workerAlg != WORK_STEALING) {
             std::unique_lock<std::mutex> lock(this->dequeMutex);
@@ -127,6 +130,9 @@ void Worker::wait_loop() {
 
         // if we have an assigned task, process it
         if (this->assignedTask != nullptr) {
+
+            //            std::cout << "Trying to process task " << this->assignedTask->getId() << std::endl;
+
             if (!this->assignedTask->is_finished()) {
 
                 // IMPORTANT NOTE!
@@ -141,15 +147,19 @@ void Worker::wait_loop() {
                 }
 
                 if (parent == waitingTask) {
+                    //                    std::cout << "Success process task " << this->assignedTask->getId() << std::endl;
                     // originated from waiting task, process it
                     this->assignedTask->process(this);
                 }
                 else {
                     // did not originate from waiting task,
                     // add the popped task back to some ready deque
+                    //                    std::cout << "Skip process task " << this->assignedTask->getId() << std::endl;
+                    if (lastTask == this->assignedTask) exit(-1);
+                    lastTask = this->assignedTask; 
                     Task* tmpTask = this->assignedTask;
                     this->assignedTask = nullptr;
-                    this->add_ready_task(tmpTask);
+                    this->add_ready_task(tmpTask); //force to remain in the same queue
                 }
             }
         }
