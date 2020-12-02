@@ -106,8 +106,6 @@ void Worker::wait_loop() {
     bool waitingTaskReady = false;
     this->assignedTask = nullptr;
 
-    Task* lastTask = NULL;
-
     // continue in wait loop until a stop is indicated,
     // or the waitingTask has become ready
     while (!this->stopped.load() && !waitingTaskReady) {
@@ -154,9 +152,6 @@ void Worker::wait_loop() {
                 else {
                     // did not originate from waiting task,
                     // add the popped task back to some ready deque
-                    //                    std::cout << "Skip process task " << this->assignedTask->getId() << std::endl;
-                    if (lastTask == this->assignedTask) exit(-1);
-                    lastTask = this->assignedTask; 
                     Task* tmpTask = this->assignedTask;
                     this->assignedTask = nullptr;
                     this->add_ready_task(tmpTask); //force to remain in the same queue
