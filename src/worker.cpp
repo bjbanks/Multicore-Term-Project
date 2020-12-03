@@ -139,7 +139,6 @@ void Worker::wait_loop() {
                 else {
                     // did not originate from waiting task and is not workable,
                     // add the task to the ready deque of some other worker
-
                     Task* tmpTask = this->assignedTask;
                     this->add_ready_task(tmpTask, false, true); // forceNotSelf = true
                 }

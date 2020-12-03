@@ -193,6 +193,7 @@ double do_timed_run(const char* app, int size, int iterations){
 	//end result will be matrix of all elements of the same value
         BENCHMARKS::parallelMatrixTranspose(arr2, size);
 
+
         gettimeofday(&before, NULL);
         for (i = 0; i < iterations; i++){
             BENCHMARKS::parallelMatrixMultiply(arr3, arr1, arr2, size);
