@@ -56,7 +56,7 @@ namespace BENCHMARKS {
     /*                    Matrix Multiply                             */
     /******************************************************************/
 
-    //will transpose a matrix that is a (size x size) square matrix.  A/B/OUT should all be 2-D arrays
+    //will multiply a matrix that is a (size x size) square matrix.  A/B/OUT should all be 2-D arrays
     void parallelMatrixMultiply(int* out, int* A, int* B, int size);
 
 

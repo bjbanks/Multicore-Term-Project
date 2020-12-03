@@ -117,9 +117,6 @@ namespace BENCHMARKS {
 
         ParallelMultiplyTaskPartial* tasks[num_sub_tasks];
 
-        //        std::cout << "Task " << parentTask->getId() << " running parallel multiply" << std:: endl;
-
-
         /*Spawn a bunch of congruent work to divide up array to do vector adds*/
         for (i = 0; i < num_sub_tasks; i++){
 
@@ -127,15 +124,12 @@ namespace BENCHMARKS {
 
             tasks[i] = new ParallelMultiplyTaskPartial(&vecOut[offset], &vecA[offset], &vecB[offset], partial_size);
 
-            //            std::cout << "Task " << parentTask->getId() << " Spawning " << tasks[i]->getId() << std::endl;
             Spawn(tasks[i], parentTask);
 
         }
 
         /*wait until all child tasks are done*/
-        //        std::cout << "Task " << parentTask->getId() << " waiting" << std::endl;
         Wait(parentTask);
-        //        std::cout << "Task " << parentTask->getId() << " done waiting" << std::endl;
 
         /*clean up the sub tasks*/
         for (i = 0; i < num_sub_tasks; i++){
@@ -154,8 +148,6 @@ namespace BENCHMARKS {
 
     void ParallelMultiplyTaskPartial::execute(){
 
-        //        std::cout << "Task " << this->getId() << "in parallel multiply" << std:: endl;
-
         for(int i = 0; i < this->size; i++) {
             vecOut[i] = vecA[i] * vecB[i];
         }
@@ -168,8 +160,6 @@ namespace BENCHMARKS {
     /****************************************************************/
 
     void parallelCopy(int* out, int* in, int size, WSDS::Task* parentTask){
-
-        //        std::cout << "Task " << parentTask->getId() << "running parallel copy" << std:: endl;
 
         int i;
         int num_sub_tasks = size / work_per_subtask;
@@ -211,8 +201,6 @@ namespace BENCHMARKS {
     }
 
     void ParallelCopyTaskPartial::execute(){
-
-        //        std::cout << "Task " << this->getId() << "in parallel copy" << std:: endl;
         for (int i = 0; i < this->size; i++){
             this->vecOut[i] = this->vecIn[i];
         }
@@ -226,8 +214,6 @@ namespace BENCHMARKS {
 
 
     int parallelReduce(int* in, int size, WSDS::Task* parentTask){
-
-        //        std::cout << "Task " << parentTask->getId() << "running parallel reduce" << std:: endl;
 
         int arrIn[size];
         int out[size];
@@ -244,16 +230,13 @@ namespace BENCHMARKS {
             for (int task = 0; task < num_sub_tasks; task++){
 
                 tasks[task] = new ParallelReduceTaskPartial(out, arrIn, task*work_per_subtask+1, size, step);
-                //                std::cout << "Task " << parentTask->getId() << " Spawning " << tasks[task]->getId() << std::endl;
+
                 Spawn(tasks[task], parentTask);
 
             }
 
-
-            //            std::cout << "Task " << parentTask->getId() << " waiting" << std::endl;
             Wait(parentTask);
-            //            std::cout << "Task " << parentTask->getId() << " done waiting" << std::endl;
-
+	    //need to transport array back to in.  This is to workaround not having barriers in our task library
             parallelCopy(arrIn, out, size, parentTask);
 
         }
@@ -271,19 +254,13 @@ namespace BENCHMARKS {
 
 
     void ParallelReduceTaskPartial::execute(){
-
-        //        std::cout << "Task " << this->getId() << "in parallel reduce" << std:: endl;
-
-
         if (start_idx > ( size / (1<<step))) {
             return; //nothing to do
         }
 
         for (int i = start_idx; i <= start_idx + work_per_subtask; i++){
             if (i <= ( size / (1<<step) ) ) { //i <= N/2^h
-
                 arrOut[i-1] = arrIn[2*i-2] + arrIn[2*i-1];
-
             }
         }
 

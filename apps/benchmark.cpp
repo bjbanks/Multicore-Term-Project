@@ -9,7 +9,7 @@
 #include <assert.h>
 #include "parallelMatrix.h"
 
-#define NWORKERS 1
+#define NWORKERS 16
 
 void init_arr(int* arr, int size){
 
@@ -190,6 +190,7 @@ double do_timed_run(const char* app, int size, int iterations){
         init_matrix(arr1, size);
         init_matrix(arr2, size);
 
+	//end result will be matrix of all elements of the same value
         BENCHMARKS::parallelMatrixTranspose(arr2, size);
 
         gettimeofday(&before, NULL);
@@ -198,7 +199,6 @@ double do_timed_run(const char* app, int size, int iterations){
         }
         gettimeofday(&after, NULL);
 
-        print_matrix(arr3, size);
 
         delete arr1;
         delete arr2;
@@ -241,7 +241,7 @@ int main(int argc, char* argv[]){
     } else {
 
         std::cout << "Error: Unknown Scheduler Policy." << std:: endl;
-        std::cout << " Please use one of the folllowing: smallest | stealing | random | roundrobin" << std::endl;
+        std::cout << " Please use one of the following: smallest | stealing | random | roundrobin" << std::endl;
         exit(-1);
 
     }
@@ -252,29 +252,29 @@ int main(int argc, char* argv[]){
     BENCHMARKS::parallelMatrixInit(scheduler, task_work_size);
 
 
-    /*std::cout << "Running Parallel Add: ";
+    std::cout << "Running Parallel Add: ";
     runtime = do_timed_run("parallelAdd", datasize, iterations);
-    std::cout << "Result: " << runtime << " ns" << std::endl << std::endl;
+    std::cout << "Result: " << runtime << " us" << std::endl << std::endl;
 
     std::cout << "Running Parallel Multiply:" << std::endl;
     runtime = do_timed_run("parallelMultiply", datasize, iterations);
-    std::cout << "Result: " << runtime << " ns" << std::endl << std::endl;
+    std::cout << "Result: " << runtime << " us" << std::endl << std::endl;
 
     std::cout << "Running Parallel Copy:" << std::endl;
     runtime = do_timed_run("parallelCopy", datasize, iterations);
-    std::cout << "Result: " << runtime << " ns" << std::endl << std::endl;
+    std::cout << "Result: " << runtime << " us" << std::endl << std::endl;
 
     std::cout << "Running Parallel Reduce:" << std::endl;
     runtime = do_timed_run("parallelReduce", datasize, iterations);
-    std::cout << "Result: " << runtime << " ns" << std::endl << std::endl;*/
+    std::cout << "Result: " << runtime << " us" << std::endl << std::endl;
 
-    /*std::cout << "Running Parallel Transpose:" << std::endl;
+    std::cout << "Running Parallel Transpose:" << std::endl;
     runtime = do_timed_run("parallelTranspose", datasize, iterations);
-    std::cout << "Result: " << runtime << " ns" << std::endl << std::endl;*/
+    std::cout << "Result: " << runtime << " us" << std::endl << std::endl;
 
     std::cout << "Running Parallel Mat Multiply:" << std::endl;
     runtime = do_timed_run("parallelMatMultiply", datasize, iterations);
-    std::cout << "Result: " << runtime << " ns" << std::endl << std::endl;
+    std::cout << "Result: " << runtime << " us" << std::endl << std::endl;
 
 
     return 0;

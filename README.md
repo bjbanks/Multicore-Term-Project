@@ -55,3 +55,15 @@ If installed on your system, you can run the unit tests with `Valgrind` by execu
 Instructions for installation on an Ubuntu (or Linux equivalent) are below. Installation for other systems are left to the user to find elsewhere online.
 
 1) `sudo apt-get install valgrind`
+
+### Benchmarks
+
+To be able to run various benchmarks on the created scheduler you can do the following:
+
+```
+cd apps
+make benchmark
+./benchmark 2 5 1 <stealing | roundrobin | random | smallest>
+```
+
+Take care to keep the second parameter less than 8.  Matrix multiply is very memory hungry and could run out of memory.  To run other benchmarks with more memory, `benchmark.cpp` can be modifies to comment out matrix multiply and matrix transpose.
