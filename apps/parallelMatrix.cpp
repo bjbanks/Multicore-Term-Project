@@ -73,7 +73,7 @@ namespace BENCHMARKS {
         for( int i = start_idx_x; i < start_idx_x + block_width; i++) {
             for (int j = start_idx_y; j < start_idx_y + block_width; j++) {
 
-                //only swap elements on one size of diagonal of matrix
+                //only swap elements on one side of diagonal of matrix
                 if (i <= j){
 
                     idxA = GET_IDX(i, j, size);
@@ -107,7 +107,6 @@ namespace BENCHMARKS {
             for (j = 0; j < num_sub_tasks; j++){
 
                 tasks[i][j] = new ParallelMatrixMultiplyPartial(out, A, B, size, i, j);
-                //                std::cout << "spawning " << tasks[i][j]->getId() << std::endl;
                 parSchedMat->spawn(tasks[i][j]);
             }
         }

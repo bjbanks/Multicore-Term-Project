@@ -35,3 +35,4 @@
 *.app
 
 benchmark
+batch-out/*
