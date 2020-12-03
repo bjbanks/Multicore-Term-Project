@@ -53,6 +53,9 @@ void Task::wait(void) {
     if (!this->is_ready()) {
         this->worker->wait_loop();
     }
+
+    // computation of children tasks have been completed and acknowledged
+    this->children.clear();
 }
 
 // is the task in a ready state for processing?
